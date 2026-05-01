@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BeeShift SaaS</title>
+
+<style>
+body{margin:0;background:#1a1400;color:#fff8e0;font-family:Arial}
+main{max-width:900px;margin:auto;padding:16px}
+.brand{font-size:28px;font-weight:900;color:#f5c400;text-align:center;margin:20px}
+.card{background:#2c2400;padding:15px;border-radius:15px;margin:10px 0}
+input,textarea{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #444;background:#111;color:#fff}
+button{padding:10px;border:none;border-radius:8px;background:#f5c400;color:#1a1400;font-weight:bold;margin:5px}
+.worker{padding:10px;background:#222;margin:5px;border-radius:10px;text-align:center}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+
+<main id="setup">
+<div class="brand">🐝 BeeShift Setup</div>
+<textarea id="cfg" placeholder="Paste Firebase config here"></textarea>
+<button onclick="saveConfig()">Save</button>
+</main>
+
+<main id="login" class="hidden">
+<div class="brand">Login</div>
+<input id="email" placeholder="Email">
+<input id="pass" type="password" placeholder="Password">
+<input id="company" placeholder="Company name">
+<button onclick="signup()">Sign Up</button>
+<button onclick="login()">Login</button>
+</main>
+
+<main id="admin" class="hidden">
+<div class="brand">🐝 Admin Panel</div>
+
+<div class="card">
+<input id="workerName" placeholder="Worker name">
+<input id="workerPin" placeholder="PIN">
+<button onclick="addWorker()">Add Worker</button>
+</div>
+
+<div id="workers"></div>
+<button onclick="logout()">Logout</button>
+</main>
+
+<script type="module">
+
+let app,auth,db,firebase
+
+function screen(id){
+["setup","login","admin"].forEach(x=>document.getElementById(x).classList.add("hidden"))
+document.getElementById(id).classList.remove("hidden")
+}
+
+window.saveConfig = async ()=>{
+localStorage.setItem("cfg",document.getElementById("cfg").value)
+location.reload()
+}
+
+async function init(){
+
+let cfg = localStorage.getItem("cfg")
+if(!cfg){screen("setup");return}
+
+let A = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js")
+let AU = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js")
+let FS = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
+
+app = A.initializeApp(Function("return "+cfg)())
+auth = AU.getAuth(app)
+db = FS.getFirestore(app)
+
+firebase = {...AU,...FS}
+
+firebase.onAuthStateChanged(auth,user=>{
+if(user){
+loadWorkers()
+screen("admin")
+}else{
+screen("login")
+}
+})
+
+}
+
+window.signup = async ()=>{
+let email = document.getElementById("email").value
+let pass = document.getElementById("pass").value
+await firebase.createUserWithEmailAndPassword(auth,email,pass)
+}
+
+window.login = async ()=>{
+let email = document.getElementById("email").value
+let pass = document.getElementById("pass").value
+await firebase.signInWithEmailAndPassword(auth,email,pass)
+}
+
+window.logout = ()=>firebase.signOut(auth)
+
+async function loadWorkers(){
+firebase.onSnapshot(firebase.collection(db,"workers"),snap=>{
+let html=""
+snap.forEach(doc=>{
+let w=doc.data()
+html+=<div class="worker">${w.name} | PIN: ${w.pin}</div>
+})
+document.getElementById("workers").innerHTML=html
+})
+}
+
+window.addWorker = async ()=>{
+let name=document.getElementById("workerName").value
+let pin=document.getElementById("workerPin").value
+await firebase.addDoc(firebase.collection(db,"workers"),{name,pin})
+}
+
+init()
+
+</script>
+
+</body>
+</html>
