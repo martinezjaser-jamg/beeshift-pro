@@ -1,53 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BeeShift</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BeeShift Pro</title>
 <style>
-body{font-family:Arial;background:#fff7d6;margin:0}
-header{background:#111;color:#fff;padding:15px;text-align:center}
-button{padding:12px;margin:5px;border:none;border-radius:10px;font-weight:bold}
-.hidden{display:none}
-.card{background:white;margin:10px;padding:15px;border-radius:15px}
+:root{--yellow:#f8b400;--black:#111827;--gray:#6b7280;--white:#fff;--green:#16a34a;--red:#dc2626;--blue:#2563eb;--bg:#fff7d6;--radius:18px}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,var(--bg),#f9fafb);color:var(--black)}header{background:var(--black);color:white;padding:18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}.logo{display:flex;align-items:center;gap:10px;font-size:24px;font-weight:800}.bee{width:42px;height:42px;background:var(--yellow);color:var(--black);border-radius:50%;display:grid;place-items:center}.container{max-width:1150px;margin:auto;padding:20px}.nav{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}.nav button,.btn{border:0;border-radius:14px;padding:14px;background:var(--white);box-shadow:0 6px 16px rgba(0,0,0,.08);font-weight:700;cursor:pointer}.nav button.active,.primary{background:var(--yellow);color:var(--black)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}.card{background:var(--white);padding:20px;border-radius:var(--radius);box-shadow:0 8px 25px rgba(0,0,0,.08)}.profile{text-align:center;cursor:pointer}.avatar{width:85px;height:85px;border-radius:50%;background:var(--yellow);display:grid;place-items:center;margin:0 auto 10px;font-size:34px;font-weight:800}input,select{width:100%;padding:13px;margin:8px 0 14px;border-radius:12px;border:1px solid #d1d5db}.success{background:var(--green);color:white}.danger{background:var(--red);color:white}.blue{background:var(--blue);color:white}.dark{background:var(--black);color:white}.big-clock{font-size:42px;font-weight:800;text-align:center;margin:15px 0}.status{display:inline-block;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800}.in{background:#dcfce7;color:#166534}.out{background:#fee2e2;color:#991b1b}.break{background:#dbeafe;color:#1e40af}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{padding:12px;text-align:left;border-bottom:1px solid #e5e7eb}th{color:var(--gray);font-size:13px}.hidden{display:none}.plan{border:2px solid #e5e7eb}.featured{border-color:var(--yellow);transform:scale(1.02)}.price{font-size:34px;font-weight:800;margin:10px 0}.notice{background:#111827;color:white;border-radius:18px;padding:15px;margin-bottom:18px}footer{text-align:center;color:var(--gray);padding:30px}@media(max-width:700px){.nav{grid-template-columns:repeat(2,1fr)}header{flex-direction:column;gap:10px}.big-clock{font-size:32px}}
 </style>
 </head>
 <body>
-
-<header>🐝 BeeShift</header>
-
-<div class="card" id="home">
-<h2>Select Worker</h2>
-<button onclick="login('Jaser','1234')">Jaser</button>
-<button onclick="login('Maria','2222')">Maria</button>
-<button onclick="login('Carlos','3333')">Carlos</button>
-</div>
-
-<div class="card hidden" id="app">
-<h2 id="user"></h2>
-<button onclick="clock('IN')">Clock In</button>
-<button onclick="clock('OUT')">Clock Out</button>
-<p id="status">Status: Out</p>
-</div>
-
+<header><div class="logo"><div class="bee">🐝</div>BeeShift Pro</div><div id="currentUser">No user selected</div></header>
+<main class="container">
+<div class="notice">✅ BeeShift Pro is live. Demo PINs: Jaser 1234, Maria 2222, Carlos 3333.</div>
+<div class="nav"><button class="active" onclick="showPage('home',this)">Home</button><button onclick="showPage('clock',this)">Clock</button><button onclick="showPage('admin',this)">Admin</button><button onclick="showPage('timesheets',this)">Timesheets</button><button onclick="showPage('upgrade',this)">Upgrade</button></div>
+<section id="home" class="page"><div class="card"><h2>Select Your Profile</h2><p>Tap your profile, enter your PIN, then go to the Clock page.</p></div><br><div class="grid" id="profiles"></div></section>
+<section id="clock" class="page hidden"><div class="grid"><div class="card"><h2>Employee Clock</h2><p id="selectedWorkerText">Select a profile first.</p><div class="big-clock" id="liveClock">--:--</div><p>Status: <span id="workStatus" class="status out">Clocked Out</span></p><label>Photo Required</label><input type="file" accept="image/*" capture="user" id="clockPhoto"><button class="btn success" onclick="clockIn()">Clock In</button> <button class="btn blue" onclick="startBreak()">Start Break</button> <button class="btn primary" onclick="endBreak()">End Break</button> <button class="btn danger" onclick="clockOut()">Clock Out</button></div><div class="card"><h2>GPS Validation</h2><p>GPS is checked only when needed, not all day.</p><button class="btn dark" onclick="getLocation()">Check My Location</button><p id="locationText">Location not checked.</p></div></div></section>
+<section id="admin" class="page hidden"><div class="grid"><div class="card"><h2>Admin Dashboard</h2><p>Total workers: <strong id="workerCount">0</strong></p><p>Active now: <strong id="activeCount">0</strong></p><p>Plan: <strong>Premium</strong></p></div><div class="card"><h2>Add Worker</h2><input id="newWorkerName" placeholder="Worker name"><input id="newWorkerPin" placeholder="PIN"><select id="newWorkerRole"><option>Employee</option><option>Manager</option><option>Admin</option></select><button class="btn primary" onclick="addWorker()">Add Worker</button></div></div><div class="card" style="margin-top:18px"><h2>Team Members</h2><table><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="teamTable"></tbody></table></div></section>
+<section id="timesheets" class="page hidden"><div class="card"><h2>Timesheets</h2><p>Logs are saved locally in this browser using localStorage.</p><button class="btn dark" onclick="exportCSV()">Export CSV</button><table><thead><tr><th>Worker</th><th>Action</th><th>Date/Time</th><th>Location</th></tr></thead><tbody id="logTable"></tbody></table></div></section>
+<section id="upgrade" class="page hidden"><div class="card"><h2>Upgrade BeeShift</h2><p>All plans include the same features. Plans only limit workers and admins.</p></div><br><div class="grid"><div class="card plan"><h3>Basic</h3><div class="price">$19/mo</div><p>Up to 10 workers</p><p>1 admin</p><button class="btn primary">Choose Basic</button></div><div class="card plan featured"><h3>Premium</h3><div class="price">$49/mo</div><p>Up to 25 workers</p><p>3 admins</p><button class="btn primary">Choose Premium</button></div><div class="card plan"><h3>Pro</h3><div class="price">$99/mo</div><p>Up to 50 workers</p><p>10 admins</p><button class="btn primary">Choose Pro</button></div></div></section>
+</main><footer>BeeShift Pro demo — HTML, CSS, and JavaScript only.</footer>
 <script>
-let currentUser=null;
-
-function login(name,pin){
-let input=prompt("Enter PIN");
-if(input===pin){
-currentUser=name;
-document.getElementById("home").classList.add("hidden");
-document.getElementById("app").classList.remove("hidden");
-document.getElementById("user").innerText=name;
-}else{
-alert("Wrong PIN");
-}
-}
-
-function clock(type){
-document.getElementById("status").innerText="Status: "+type;
-}
+let workers=JSON.parse(localStorage.getItem('workers'))||[{name:'Jaser',pin:'1234',role:'Admin',status:'Out'},{name:'Maria',pin:'2222',role:'Employee',status:'Out'},{name:'Carlos',pin:'3333',role:'Employee',status:'Out'}];let logs=JSON.parse(localStorage.getItem('logs'))||[];let selectedWorker=JSON.parse(localStorage.getItem('selectedWorker'))||null;let lastLocation='Not captured';function saveData(){localStorage.setItem('workers',JSON.stringify(workers));localStorage.setItem('logs',JSON.stringify(logs));localStorage.setItem('selectedWorker',JSON.stringify(selectedWorker))}function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAll()}function renderProfiles(){let box=document.getElementById('profiles');box.innerHTML='';workers.forEach((w,i)=>{let div=document.createElement('div');div.className='card profile';let cls=w.status==='In'?'in':w.status==='Break'?'break':'out';div.innerHTML=`<div class="avatar">${w.name[0]}</div><h3>${w.name}</h3><p>${w.role}</p><span class="status ${cls}">${w.status}</span>`;div.onclick=()=>selectWorker(i);box.appendChild(div)})}function selectWorker(i){let pin=prompt('Enter PIN for '+workers[i].name);if(pin===workers[i].pin){selectedWorker=workers[i];saveData();alert('Welcome '+selectedWorker.name)}else alert('Wrong PIN');renderAll()}function requireWorker(){if(!selectedWorker){alert('Select your profile first.');return false}return true}function requirePhoto(){let photo=document.getElementById('clockPhoto');if(!photo.files.length){alert('Photo is required for clock in/out.');return false}return true}function addLog(action){logs.unshift({worker:selectedWorker.name,action,time:new Date().toLocaleString(),location:lastLocation});saveData();renderAll()}function updateWorkerStatus(status){workers=workers.map(w=>w.name===selectedWorker.name?{...w,status}:w);selectedWorker.status=status;saveData()}function clockIn(){if(!requireWorker()||!requirePhoto())return;updateWorkerStatus('In');addLog('Clock In')}function startBreak(){if(!requireWorker())return;updateWorkerStatus('Break');addLog('Start Break')}function endBreak(){if(!requireWorker())return;updateWorkerStatus('In');addLog('End Break')}function clockOut(){if(!requireWorker()||!requirePhoto())return;updateWorkerStatus('Out');addLog('Clock Out')}function getLocation(){if(!navigator.geolocation){document.getElementById('locationText').textContent='GPS not supported.';return}navigator.geolocation.getCurrentPosition(pos=>{lastLocation=pos.coords.latitude.toFixed(5)+', '+pos.coords.longitude.toFixed(5);document.getElementById('locationText').textContent=lastLocation},()=>document.getElementById('locationText').textContent='Permission denied or unavailable.')}function addWorker(){let name=document.getElementById('newWorkerName').value.trim();let pin=document.getElementById('newWorkerPin').value.trim();let role=document.getElementById('newWorkerRole').value;if(!name||!pin)return alert('Enter worker name and PIN.');workers.push({name,pin,role,status:'Out'});saveData();document.getElementById('newWorkerName').value='';document.getElementById('newWorkerPin').value='';renderAll()}function adminClock(name,action){selectedWorker=workers.find(w=>w.name===name);if(action==='in')updateWorkerStatus('In');if(action==='out')updateWorkerStatus('Out');addLog('Admin Clock '+action.toUpperCase())}function renderTeam(){let tbody=document.getElementById('teamTable');tbody.innerHTML='';workers.forEach(w=>{tbody.innerHTML+=`<tr><td>${w.name}</td><td>${w.role}</td><td>${w.status}</td><td><button class="btn success" onclick="adminClock('${w.name}','in')">In</button> <button class="btn danger" onclick="adminClock('${w.name}','out')">Out</button></td></tr>`});document.getElementById('workerCount').textContent=workers.length;document.getElementById('activeCount').textContent=workers.filter(w=>w.status==='In').length}function renderLogs(){let tbody=document.getElementById('logTable');tbody.innerHTML='';logs.forEach(l=>tbody.innerHTML+=`<tr><td>${l.worker}</td><td>${l.action}</td><td>${l.time}</td><td>${l.location}</td></tr>`)}function exportCSV(){let rows=[['Worker','Action','Date/Time','Location'],...logs.map(l=>[l.worker,l.action,l.time,l.location])];let csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');let blob=new Blob([csv],{type:'text/csv'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download='beeshift-timesheets.csv';a.click()}function renderAll(){renderProfiles();renderTeam();renderLogs();if(selectedWorker){document.getElementById('currentUser').textContent=selectedWorker.name+' ('+selectedWorker.role+')';document.getElementById('selectedWorkerText').textContent=selectedWorker.name+' is selected.';let badge=document.getElementById('workStatus');badge.textContent=selectedWorker.status==='In'?'Clocked In':selectedWorker.status==='Break'?'On Break':'Clocked Out';badge.className='status '+(selectedWorker.status==='In'?'in':selectedWorker.status==='Break'?'break':'out')}}setInterval(()=>document.getElementById('liveClock').textContent=new Date().toLocaleTimeString(),1000);renderAll();
 </script>
-
 </body>
 </html>
