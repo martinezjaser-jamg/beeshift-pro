@@ -5,67 +5,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BeeShift SaaS</title>
 <style>
-body{margin:0;background:#1a1400;color:#fff8e0;font-family:Arial}
-main{max-width:900px;margin:auto;padding:16px}.brand{font-size:28px;font-weight:900;color:#f5c400;text-align:center;margin:20px}.card{background:#2c2400;padding:15px;border-radius:15px;margin:10px 0}input,textarea{width:100%;box-sizing:border-box;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #444;background:#111;color:#fff}button{padding:10px;border:none;border-radius:8px;background:#f5c400;color:#1a1400;font-weight:bold;margin:5px}.worker{padding:10px;background:#222;margin:5px;border-radius:10px;text-align:center}.hidden{display:none}.error{color:#ff5252;font-size:13px;white-space:pre-wrap}.ok{color:#00c864;font-size:13px}
+body{margin:0;background:#1a1400;color:#fff8e0;font-family:Arial}main{max-width:900px;margin:auto;padding:16px}.brand{font-size:28px;font-weight:900;color:#f5c400;text-align:center;margin:20px}.card{background:#2c2400;padding:15px;border-radius:15px;margin:10px 0}input,textarea{width:100%;box-sizing:border-box;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #444;background:#111;color:#fff}button{padding:10px;border:none;border-radius:8px;background:#f5c400;color:#1a1400;font-weight:bold;margin:5px}.worker{padding:10px;background:#222;margin:5px;border-radius:10px;text-align:center}.hidden{display:none}.error{color:#ff5252;font-size:13px;white-space:pre-wrap}.ok{color:#00c864;font-size:13px}.muted{color:#b9a765;font-size:13px}.pill{display:inline-block;background:#111;border:1px solid #444;border-radius:999px;padding:6px 10px;margin:4px;color:#f5c400}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
-<main id="setup">
-<div class="brand">🐝 BeeShift Setup</div>
-<div class="card">
-<p>Paste your Firebase config. This now accepts JSON, <b>firebaseConfig = {...}</b>, or <b>const firebaseConfig = {...};</b></p>
-<textarea id="cfg" rows="10" placeholder="Paste Firebase config here"></textarea>
-<button onclick="saveConfig()">Save</button>
-<button onclick="clearConfig()">Clear Saved Config</button>
-<div id="setupMsg"></div>
-</div>
-</main>
-<main id="login" class="hidden">
-<div class="brand">Login</div>
-<div class="card">
-<input id="email" placeholder="Email">
-<input id="pass" type="password" placeholder="Password">
-<input id="company" placeholder="Company name">
-<button onclick="signup()">Sign Up</button>
-<button onclick="login()">Login</button>
-<button onclick="clearConfig()">Reset Firebase Config</button>
-<div id="authMsg"></div>
-</div>
-</main>
-<main id="admin" class="hidden">
-<div class="brand">🐝 Admin Panel</div>
-<div class="card">
-<input id="workerName" placeholder="Worker name">
-<input id="workerPin" placeholder="PIN">
-<button onclick="addWorker()">Add Worker</button>
-</div>
-<div id="workers"></div>
-<button onclick="logout()">Logout</button>
-</main>
+<main id="setup"><div class="brand">🐝 BeeShift Setup</div><div class="card"><p>Paste your Firebase config. Accepts JSON, <b>firebaseConfig = {...}</b>, or <b>const firebaseConfig = {...};</b></p><textarea id="cfg" rows="10" placeholder="Paste Firebase config here"></textarea><button onclick="saveConfig()">Save</button><button onclick="clearConfig()">Clear Saved Config</button><div id="setupMsg"></div></div></main>
+<main id="login" class="hidden"><div class="brand">🐝 BeeShift SaaS Login</div><div class="card"><input id="email" placeholder="Email"><input id="pass" type="password" placeholder="Password"><input id="company" placeholder="Company code, example: lemoine-honey"><div class="row"><button onclick="signup()">Create Owner Account</button><button onclick="login()">Login</button><button onclick="clearConfig()">Reset Firebase Config</button></div><p class="muted">Each company code has separate workers and logs.</p><div id="authMsg"></div></div></main>
+<main id="admin" class="hidden"><div class="brand">🐝 Admin Panel</div><div class="card"><div id="companyInfo" class="muted"></div><div class="pill" id="planInfo">Plan: Basic</div></div><div class="card"><h3>Add Worker</h3><input id="workerName" placeholder="Worker name"><input id="workerPin" placeholder="PIN"><input id="workerRate" type="number" placeholder="Hourly rate"><button onclick="addWorker()">Add Worker</button></div><div class="card"><h3>Workers</h3><div id="workers"></div></div><div class="card"><h3>Company structure</h3><p class="muted">Data is saved in Firebase like this:</p><p class="pill">companies/{companyId}/workers</p><p class="pill">companies/{companyId}/entries</p><p class="pill">users/{uid}</p></div><button onclick="logout()">Logout</button></main>
 <script type="module">
-let app,auth,db,firebase;
+let app,auth,db,firebase,currentUser=null,currentCompanyId=null,currentCompanyName=null,unsubscribeWorkers=null;
 function screen(id){["setup","login","admin"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
 function msg(id,text,type="error"){document.getElementById(id).className=type;document.getElementById(id).textContent=text}
-function parseFirebaseConfig(raw){
-  let t=(raw||"").trim();
-  t=t.replace(/<script[\s\S]*?>/gi,"").replace(/<\/script>/gi,"").trim();
-  t=t.replace(/^const\s+firebaseConfig\s*=\s*/m,"").replace(/^let\s+firebaseConfig\s*=\s*/m,"").replace(/^var\s+firebaseConfig\s*=\s*/m,"").replace(/^firebaseConfig\s*=\s*/m,"").trim();
-  t=t.replace(/;\s*$/," ").trim();
-  const first=t.indexOf("{");
-  const last=t.lastIndexOf("}");
-  if(first===-1||last===-1||last<=first) throw new Error("Firebase config must start with { and end with }.");
-  t=t.slice(first,last+1);
-  try { return JSON.parse(t); } catch(e) {}
-  return Function("return ("+t+")")();
-}
+function cleanCompany(s){return (s||"demo-company").toLowerCase().trim().replace(/[^a-z0-9-]/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,45)||"demo-company"}
+function parseFirebaseConfig(raw){let t=(raw||"").trim();t=t.replace(/<script[\s\S]*?>/gi,"").replace(/<\/script>/gi,"").trim();t=t.replace(/^const\s+firebaseConfig\s*=\s*/m,"").replace(/^let\s+firebaseConfig\s*=\s*/m,"").replace(/^var\s+firebaseConfig\s*=\s*/m,"").replace(/^firebaseConfig\s*=\s*/m,"").trim();t=t.replace(/;\s*$/," ").trim();const first=t.indexOf("{");const last=t.lastIndexOf("}");if(first===-1||last===-1||last<=first) throw new Error("Firebase config must start with { and end with }.");t=t.slice(first,last+1);try{return JSON.parse(t)}catch(e){}return Function("return ("+t+")")()}
 window.saveConfig=()=>{try{const cfg=parseFirebaseConfig(document.getElementById("cfg").value);localStorage.setItem("cfg",JSON.stringify(cfg));msg("setupMsg","Saved. Loading login screen...","ok");setTimeout(()=>location.reload(),500)}catch(e){msg("setupMsg","Config error: "+e.message)}};
-window.clearConfig=()=>{localStorage.removeItem("cfg");location.reload()};
-async function init(){try{let saved=localStorage.getItem("cfg");if(!saved){screen("setup");return}let cfg=parseFirebaseConfig(saved);let A=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");let AU=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");let FS=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");app=A.initializeApp(cfg);auth=AU.getAuth(app);db=FS.getFirestore(app);firebase={...AU,...FS};firebase.onAuthStateChanged(auth,user=>{if(user){loadWorkers();screen("admin")}else{screen("login")}})}catch(e){localStorage.removeItem("cfg");screen("setup");msg("setupMsg","Firebase error: "+e.message)}}
-window.signup=async()=>{try{await firebase.createUserWithEmailAndPassword(auth,document.getElementById("email").value,document.getElementById("pass").value)}catch(e){msg("authMsg",e.message)}};
-window.login=async()=>{try{await firebase.signInWithEmailAndPassword(auth,document.getElementById("email").value,document.getElementById("pass").value)}catch(e){msg("authMsg",e.message)}};
+window.clearConfig=()=>{localStorage.removeItem("cfg");localStorage.removeItem("companyId");location.reload()};
+function companyRef(){return firebase.doc(db,"companies",currentCompanyId)}
+function workersRef(){return firebase.collection(db,"companies",currentCompanyId,"workers")}
+async function createOrUpdateCompany(user,companyInput){currentCompanyId=cleanCompany(companyInput||localStorage.getItem("companyId")||"demo-company");currentCompanyName=companyInput||currentCompanyId;localStorage.setItem("companyId",currentCompanyId);await firebase.setDoc(companyRef(),{companyId:currentCompanyId,name:currentCompanyName,ownerUid:user.uid,ownerEmail:user.email,plan:"basic",workerLimit:10,updatedAt:new Date().toISOString()},{merge:true});await firebase.setDoc(firebase.doc(db,"users",user.uid),{uid:user.uid,email:user.email,companyId:currentCompanyId,role:"owner",updatedAt:new Date().toISOString()},{merge:true})}
+async function loadUserCompany(user){let userSnap=await firebase.getDoc(firebase.doc(db,"users",user.uid));if(userSnap.exists()&&userSnap.data().companyId){currentCompanyId=userSnap.data().companyId}else{currentCompanyId=localStorage.getItem("companyId")||"demo-company"}localStorage.setItem("companyId",currentCompanyId);let co=await firebase.getDoc(companyRef());currentCompanyName=co.exists()?(co.data().name||currentCompanyId):currentCompanyId}
+async function init(){try{let saved=localStorage.getItem("cfg");if(!saved){screen("setup");return}let cfg=parseFirebaseConfig(saved);let A=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");let AU=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");let FS=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");app=A.initializeApp(cfg);auth=AU.getAuth(app);db=FS.getFirestore(app);firebase={...AU,...FS};firebase.onAuthStateChanged(auth,async user=>{currentUser=user;if(user){await loadUserCompany(user);startAdmin()}else{screen("login")}})}catch(e){localStorage.removeItem("cfg");screen("setup");msg("setupMsg","Firebase error: "+e.message)}}
+window.signup=async()=>{try{let email=document.getElementById("email").value.trim();let pass=document.getElementById("pass").value;let company=document.getElementById("company").value.trim();let cred=await firebase.createUserWithEmailAndPassword(auth,email,pass);await createOrUpdateCompany(cred.user,company);currentUser=cred.user;startAdmin()}catch(e){msg("authMsg",e.message)}};
+window.login=async()=>{try{let email=document.getElementById("email").value.trim();let pass=document.getElementById("pass").value;let company=document.getElementById("company").value.trim();let cred=await firebase.signInWithEmailAndPassword(auth,email,pass);if(company){await createOrUpdateCompany(cred.user,company)}else{await loadUserCompany(cred.user)}currentUser=cred.user;startAdmin()}catch(e){msg("authMsg",e.message)}};
 window.logout=()=>firebase.signOut(auth);
-function loadWorkers(){firebase.onSnapshot(firebase.collection(db,"workers"),snap=>{let html="";snap.forEach(doc=>{let w=doc.data();html+=`<div class="worker">${w.name||"No name"} | PIN: ${w.pin||""}</div>`});document.getElementById("workers").innerHTML=html||'<div class="worker">No workers yet</div>'})}
-window.addWorker=async()=>{try{let name=document.getElementById("workerName").value.trim();let pin=document.getElementById("workerPin").value.trim();if(!name||!pin){alert("Add name and PIN");return}await firebase.addDoc(firebase.collection(db,"workers"),{name,pin,createdAt:new Date().toISOString()});document.getElementById("workerName").value="";document.getElementById("workerPin").value=""}catch(e){alert(e.message)}};
+async function startAdmin(){document.getElementById("companyInfo").innerHTML=`Owner: <b>${currentUser.email}</b><br>Company: <b>${currentCompanyId}</b>`;screen("admin");loadWorkers()}
+function loadWorkers(){if(unsubscribeWorkers)unsubscribeWorkers();unsubscribeWorkers=firebase.onSnapshot(workersRef(),snap=>{let html="";snap.forEach(doc=>{let w=doc.data();html+=`<div class="worker"><b>${w.name||"No name"}</b><br>PIN: ${w.pin||""}<br>Rate: $${w.rate||0}/hr<br><button onclick="removeWorker('${doc.id}')">Remove</button></div>`});document.getElementById("workers").innerHTML=html||'<div class="worker">No workers yet</div>'})}
+window.addWorker=async()=>{try{let name=document.getElementById("workerName").value.trim();let pin=document.getElementById("workerPin").value.trim();let rate=Number(document.getElementById("workerRate").value||0);if(!name||!pin){alert("Add name and PIN");return}let current=await firebase.getDocs(workersRef());if(current.size>=10){alert("Basic plan limit: 10 workers");return}await firebase.addDoc(workersRef(),{name,pin,rate,active:true,createdAt:new Date().toISOString()});document.getElementById("workerName").value="";document.getElementById("workerPin").value="";document.getElementById("workerRate").value=""}catch(e){alert(e.message)}};
+window.removeWorker=async(id)=>{if(confirm("Remove this worker?")){await firebase.deleteDoc(firebase.doc(db,"companies",currentCompanyId,"workers",id))}};
 init();
 </script>
 </body>
