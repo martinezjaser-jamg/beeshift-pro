@@ -1,0 +1,22 @@
+{
+  "name": "BeeShift",
+  "short_name": "BeeShift",
+  "start_url": "./saas.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1400",
+  "theme_color": "#f5c400",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
