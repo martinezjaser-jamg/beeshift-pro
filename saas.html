@@ -661,8 +661,8 @@ function applyLang(){
   setText('button[onclick="checkGPS()"]',tr('checkGPS'));
   setText('#breakStartBtn',tr('startBreak'));
   setText('#breakEndBtn',tr('endBreak'));
-  setText('button[onclick="downloadWorkerCSV(\\'today\\')"]',tr('downloadToday'));
-  setText('button[onclick="downloadWorkerCSV(\\'week\\')"]',tr('downloadWeek'));
+  setText("button[onclick=\"downloadWorkerCSV(\'today\')\"]",tr("downloadToday"));
+  setText("button[onclick=\"downloadWorkerCSV(\'week\')\"]",tr("downloadWeek"));
   const photoLabel=document.querySelector('label[for="clockPhoto"]'); if(photoLabel) photoLabel.textContent=tr('photoLabel');
   const workerHint=document.querySelector('#workerScreen .photoHint'); if(workerHint) workerHint.textContent=tr('photoHint');
 }
