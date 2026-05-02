@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>BeeShift</title>
+<meta name="google" content="notranslate">
+<meta name="robots" content="notranslate">
 
 <meta name="theme-color" content="#1a1400">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -237,7 +239,17 @@ button:disabled{opacity:.35;cursor:not-allowed}
   @keyframes splash{0%,75%{opacity:1}100%{opacity:0;visibility:hidden}}
 }
 
-/* ULTRA PREMIUM LOGO + APP FEEL */
+.notranslate{translate:no}
+.langBtn{position:fixed;right:12px;bottom:12px;z-index:80;background:#171200!important;color:var(--accent)!important;border:1px solid var(--accent)!important}
+.workerEditPhotoPreview{max-width:160px;border-radius:16px;margin:8px auto;display:block}
+@media(max-width:760px){
+  .table-row{grid-template-columns:1.2fr .8fr .8fr 1fr!important}
+  .table-row span:nth-child(4),.table-row span:nth-child(5),
+  .table-row b:nth-child(4),.table-row b:nth-child(5){display:none!important}
+  .table-row span:nth-child(6),.table-row b:nth-child(6){display:block!important}
+}
+
+/* Ultra premium logo + Android/iPhone app feel */
 .brand img,
 .topTitle img {
   background: linear-gradient(135deg,#f5c400,#ffde59,#f5c400);
@@ -248,7 +260,6 @@ button:disabled{opacity:.35;cursor:not-allowed}
     0 20px 40px rgba(0,0,0,.7);
   animation: logoFloat 3.5s ease-in-out infinite;
 }
-
 .brand img {
   width: 100px;
   height: 100px;
@@ -256,26 +267,20 @@ button:disabled{opacity:.35;cursor:not-allowed}
   margin: 0 auto 12px;
   object-fit: cover;
 }
-
 .topTitle img {
   width: 44px;
   height: 44px;
   border-radius: 15px;
   object-fit: cover;
 }
-
 .brand img:active,
-.topTitle img:active {
-  transform: scale(0.95);
-  transition: .1s;
-}
-
+.topTitle img:active {transform: scale(0.95);transition:.1s}
 @keyframes logoFloat {
   0%,100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-6px) scale(1.05); }
 }
 
-/* iPhone-style splash screen */
+/* iPhone/Android style splash */
 #splashScreen {
   position: fixed;
   inset: 0;
@@ -286,12 +291,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
   justify-content: center;
   animation: splashHide 1.8s ease forwards;
 }
-
-.splashInner {
-  text-align: center;
-  animation: splashLogo 1.4s ease forwards;
-}
-
+.splashInner {text-align:center;animation:splashLogo 1.4s ease forwards}
 .splashInner img {
   width: 120px;
   height: 120px;
@@ -304,41 +304,34 @@ button:disabled{opacity:.35;cursor:not-allowed}
     0 0 75px rgba(245,196,0,.3),
     0 20px 45px rgba(0,0,0,.75);
 }
-
 .splashInner div {
-  margin-top: 14px;
-  color: #f5c400;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: .03em;
+  margin-top:14px;
+  color:#f5c400;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:.03em;
 }
-
 @keyframes splashLogo {
-  0% { opacity: 0; transform: scale(.85) translateY(12px); }
-  45% { opacity: 1; transform: scale(1.05) translateY(0); }
-  100% { opacity: 1; transform: scale(1); }
+  0% { opacity:0; transform:scale(.85) translateY(12px); }
+  45% { opacity:1; transform:scale(1.05) translateY(0); }
+  100% { opacity:1; transform:scale(1); }
 }
-
 @keyframes splashHide {
-  0%,75% { opacity: 1; visibility: visible; }
-  100% { opacity: 0; visibility: hidden; pointer-events: none; }
+  0%,75% { opacity:1; visibility:visible; }
+  100% { opacity:0; visibility:hidden; pointer-events:none; }
 }
-
-/* onboarding / screen animation */
-main {
-  animation: screenEnter .35s ease;
-}
-
+main{animation:screenEnter .35s ease}
 @keyframes screenEnter {
-  from { opacity: 0; transform: translateY(10px) scale(.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity:0; transform:translateY(10px) scale(.98); }
+  to { opacity:1; transform:translateY(0) scale(1); }
 }
 
 </style>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="BeeShift">
 </head>
 
 <body>
-
 <div id="splashScreen">
   <div class="splashInner">
     <img src="logo.png" alt="BeeShift logo">
@@ -346,6 +339,7 @@ main {
   </div>
 </div>
 
+<button id="langToggleBtn" class="langBtn" onclick="toggleAppLang()">Español</button>
 
 <main id="setup" class="hidden">
   <div class="brand"><img src="logo.png"><div>BeeShift</div></div>
@@ -584,6 +578,29 @@ main {
   </div>
 </div>
 
+
+<div id="editWorkerModal" class="modal">
+  <div class="modalBox">
+    <h3 data-en="Edit Worker Profile" data-es="Editar Perfil del Trabajador">Edit Worker Profile</h3>
+    <input id="editWorkerId" type="hidden">
+    <input id="editWorkerName" placeholder="Worker name">
+    <input id="editWorkerPin" placeholder="PIN">
+    <input id="editWorkerRate" type="number" placeholder="Hourly rate">
+    <select id="editWorkerActive">
+      <option value="true">Active</option>
+      <option value="false">Inactive</option>
+    </select>
+    <div class="photoBox">
+      <input id="editWorkerProfilePhoto" class="photoInput" type="file" accept="image/*" capture="environment">
+      <label for="editWorkerProfilePhoto" class="photoBtn" data-en="📸 Replace Profile Photo" data-es="📸 Cambiar Foto de Perfil">📸 Replace Profile Photo</label>
+      <div class="photoHint" data-en="Optional. Leave empty to keep current photo." data-es="Opcional. Déjalo vacío para mantener la foto actual.">Optional. Leave empty to keep current photo.</div>
+      <img id="editWorkerProfilePreview" class="workerEditPhotoPreview hidden">
+    </div>
+    <button onclick="saveWorkerProfile()" data-en="Save Worker" data-es="Guardar Trabajador">Save Worker</button>
+    <button class="smallLink" onclick="closeEditWorkerModal()" data-en="Cancel" data-es="Cancelar">Cancel</button>
+  </div>
+</div>
+
 <script type="module">
 const firebaseConfig={
   apiKey:"AIzaSyCdBWbKFbfxLP_5q5EzbUBt7IrStvI5jLc",
@@ -597,7 +614,7 @@ const firebaseConfig={
 const PLAN_LIMITS={basic:10,premium:25,pro:50};
 let app,auth,db,F,currentUser=null,currentCompanyId=null;
 let companySettings={plan:'basic',workerLimit:10,radiusMeters:150,status:'active'};
-let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,currentPhotoData=null,workerProfilePhotoData=null;
+let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,currentPhotoData=null,workerProfilePhotoData=null,editWorkerProfilePhotoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
 let clockBusy=false,unsubW=null,unsubE=null;
 
 function screen(id){
@@ -605,6 +622,51 @@ function screen(id){
   document.getElementById(id).classList.remove('hidden');
 }
 window.screen=screen;
+
+const T={
+  en:{
+    workerKiosk:'👷 Worker Kiosk',adminLogin:'🔐 Admin Login',createCompany:'➕ Create Company',
+    continue:'Continue',back:'Back',login:'Login',dashboard:'Dashboard',workers:'Workers',payroll:'Payroll',timeLogs:'Time Logs',settings:'Settings',
+    clockIn:'⏱ Clock In',clockOut:'⏹ Clock Out',startBreak:'Start Break',endBreak:'End Break',checkGPS:'Check GPS',
+    downloadToday:'Download Today',downloadWeek:'Download Week',photoLabel:'📸 Take Required Clock Photo',
+    photoHint:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.'
+  },
+  es:{
+    workerKiosk:'👷 Kiosko Trabajador',adminLogin:'🔐 Admin',createCompany:'➕ Crear Empresa',
+    continue:'Continuar',back:'Atrás',login:'Entrar',dashboard:'Panel',workers:'Trabajadores',payroll:'Nómina',timeLogs:'Registros',settings:'Ajustes',
+    clockIn:'⏱ Entrada',clockOut:'⏹ Salida',startBreak:'Iniciar Descanso',endBreak:'Terminar Descanso',checkGPS:'Revisar GPS',
+    downloadToday:'Descargar Hoy',downloadWeek:'Descargar Semana',photoLabel:'📸 Tomar Foto Requerida',
+    photoHint:'Foto + GPS solo son requeridos para Entrada y Salida. Los descansos funcionan mientras el turno está activo.'
+  }
+};
+function tr(k){return (T[appLang]&&T[appLang][k])||T.en[k]||k}
+function setText(selector,text){document.querySelectorAll(selector).forEach(e=>e.textContent=text)}
+window.toggleAppLang=()=>{
+  appLang=appLang==='en'?'es':'en';
+  localStorage.setItem('beeshift_lang',appLang);
+  applyLang();
+  renderAll();
+}
+function applyLang(){
+  const b=document.getElementById('langToggleBtn');
+  if(b)b.textContent=appLang==='en'?'Español':'English';
+  document.documentElement.lang=appLang;
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.dataset[appLang]||el.dataset.en});
+  setText('button[onclick="openWorkerKioskStart()"]',tr('workerKiosk'));
+  setText('button[onclick="openAdminLogin()"]',tr('adminLogin'));
+  setText('button[onclick="openCreateCompany()"]',tr('createCompany'));
+  setText('button[onclick="loadKioskCompany()"]',tr('continue'));
+  setText('button[onclick="login()"]',tr('login'));
+  setText('button[onclick="signup()"]',tr('createCompany'));
+  setText('button[onclick="checkGPS()"]',tr('checkGPS'));
+  setText('#breakStartBtn',tr('startBreak'));
+  setText('#breakEndBtn',tr('endBreak'));
+  setText('button[onclick="downloadWorkerCSV(\\'today\\')"]',tr('downloadToday'));
+  setText('button[onclick="downloadWorkerCSV(\\'week\\')"]',tr('downloadWeek'));
+  const photoLabel=document.querySelector('label[for="clockPhoto"]'); if(photoLabel) photoLabel.textContent=tr('photoLabel');
+  const workerHint=document.querySelector('#workerScreen .photoHint'); if(workerHint) workerHint.textContent=tr('photoHint');
+}
+
 
 function msg(id,t,c='error'){
   const e=document.getElementById(id);
@@ -628,6 +690,7 @@ window.openAdminLogin=()=>screen('login');
 window.openCreateCompany=()=>screen('signup');
 
 async function init(){
+  applyLang();
   try{
     const A=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const AU=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
@@ -854,6 +917,7 @@ function renderWorkers(){
       Status: ${openEntry(w.id)?'<span class="statusIn">🟢 In</span>':'<span class="statusOut">⬤ Out</span>'}<br>
       ${w.profilePhoto?'<span class="pill">Profile Photo ✓</span>':'<span class="pill">No Photo</span>'}<br>
       <button onclick="viewWorkerLogs('${w.id}')">View Logs</button>
+      <button onclick="openEditWorker('${w.id}')">Edit Profile</button>
       <button class="danger" onclick="removeWorker('${w.id}')">Remove</button>
     </div>
   `).join('')||'<div class="worker">No workers yet</div>';
@@ -862,7 +926,7 @@ function renderWorkers(){
 function renderKiosk(){
   const el=document.getElementById('kioskWorkers');if(!el)return;
 
-  el.innerHTML=workers.map(w=>`
+  el.innerHTML=workers.filter(w=>w.active!==false).map(w=>`
     <div class="worker" onclick="openPin('${w.id}')">
       ${workerProfileHTML(w)}
       <b>${w.name}</b><br>
@@ -981,6 +1045,40 @@ window.saveEntryEdit=async()=>{
   closeEditModal();
 }
 
+
+window.openEditWorker=(id)=>{
+  const w=workers.find(x=>x.id===id);
+  if(!w)return;
+  editWorkerProfilePhotoData=null;
+  document.getElementById('editWorkerId').value=id;
+  document.getElementById('editWorkerName').value=w.name||'';
+  document.getElementById('editWorkerPin').value=w.pin||'';
+  document.getElementById('editWorkerRate').value=Number(w.rate||0);
+  document.getElementById('editWorkerActive').value=(w.active===false?'false':'true');
+  const img=document.getElementById('editWorkerProfilePreview');
+  if(w.profilePhoto){img.src=w.profilePhoto;img.classList.remove('hidden')}else{img.src='';img.classList.add('hidden')}
+  document.getElementById('editWorkerModal').classList.add('open');
+}
+window.closeEditWorkerModal=()=>{
+  document.getElementById('editWorkerModal').classList.remove('open');
+  editWorkerProfilePhotoData=null;
+  const f=document.getElementById('editWorkerProfilePhoto');
+  if(f)f.value='';
+}
+window.saveWorkerProfile=async()=>{
+  const id=document.getElementById('editWorkerId').value;
+  if(!id)return;
+  const name=document.getElementById('editWorkerName').value.trim();
+  const pin=document.getElementById('editWorkerPin').value.trim();
+  const rate=Number(document.getElementById('editWorkerRate').value||0);
+  const active=document.getElementById('editWorkerActive').value==='true';
+  if(!name||!pin)return alert('Name and PIN are required.');
+  const data={name,pin,rate,active,updatedAt:new Date().toISOString(),updatedBy:currentUser?.email||'admin'};
+  if(editWorkerProfilePhotoData)data.profilePhoto=editWorkerProfilePhotoData;
+  await F.updateDoc(F.doc(db,'companies',currentCompanyId,'workers',id),data);
+  closeEditWorkerModal();
+}
+
 window.addWorker=async()=>{
   try{
     const name=document.getElementById('workerName').value.trim();
@@ -1007,7 +1105,7 @@ window.addWorker=async()=>{
     const img=document.getElementById('workerProfilePreview');
     if(file)file.value='';
     if(img){img.src='';img.classList.add('hidden')}
-    workerProfilePhotoData=null;
+    workerProfilePhotoData=null,editWorkerProfilePhotoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
   }catch(e){alert('Add worker error: '+e.message)}
 }
 
@@ -1131,6 +1229,17 @@ document.addEventListener('change',async e=>{
       img.classList.remove('hidden');
     }catch(err){alert('Profile photo error: '+err.message)}
   }
+
+  if(e.target?.id==='editWorkerProfilePhoto'){
+    const f=e.target.files[0];
+    if(!f)return;
+    try{
+      editWorkerProfilePhotoData=await compressImage(f);
+      const img=document.getElementById('editWorkerProfilePreview');
+      img.src=editWorkerProfilePhotoData;
+      img.classList.remove('hidden');
+    }catch(err){alert('Profile photo error: '+err.message)}
+  }
 });
 
 function needPhoto(){
@@ -1202,7 +1311,7 @@ function renderWorkerScreen(){
 
   const btn=document.getElementById('smartClockBtn');
   btn.disabled=clockBusy;
-  btn.textContent=isIn?'⏹ Clock Out':'⏱ Clock In';
+  btn.textContent=isIn?tr('clockOut'):tr('clockIn');
   btn.className='bigClockBtn '+(isIn?'danger':'');
 
   document.getElementById('breakStartBtn').disabled=!isIn||!!(o&&o.breakStart)||clockBusy;
