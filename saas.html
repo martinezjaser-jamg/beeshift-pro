@@ -326,6 +326,17 @@ main{animation:screenEnter .35s ease}
   to { opacity:1; transform:translateY(0) scale(1); }
 }
 
+
+.companyLogoPreview{max-width:170px;max-height:120px;border-radius:18px;margin:10px auto;display:block;border:2px solid var(--accent);background:#111;object-fit:contain}
+.companyKioskLogo{max-width:130px;max-height:90px;border-radius:18px;margin:8px auto 12px;display:block;border:2px solid var(--accent);background:#111;object-fit:contain;box-shadow:0 8px 28px #0008}
+.copyBox{background:#111;border:1px solid var(--border);border-radius:14px;padding:10px;margin:8px 0;color:var(--accent);font-weight:900;text-align:center}
+.codeHint{font-size:12px;color:var(--muted);margin-top:-4px;margin-bottom:8px}
+
+
+.qrBox{background:#111;border:1px solid var(--border);border-radius:18px;padding:14px;margin:10px 0;text-align:center}
+.qrBox img{width:210px;height:210px;border-radius:16px;background:#fff;padding:10px;margin:10px auto;display:block}
+.linkBox{word-break:break-all;background:#0b0b0b;border:1px solid #333;border-radius:12px;padding:10px;color:var(--accent);font-size:13px}
+
 </style>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
@@ -389,6 +400,13 @@ main{animation:screenEnter .35s ease}
   <div class="card">
     <input id="signupCompanyName" placeholder="Company name">
     <input id="signupCompanyCode" placeholder="Company code, example: twin-shine">
+    <div class="codeHint">Company code is auto-generated from company name, but you can edit it.</div>
+    <div class="photoBox">
+      <input id="signupCompanyLogo" class="photoInput" type="file" accept="image/*">
+      <label for="signupCompanyLogo" class="photoBtn">🏢 Add Company Logo</label>
+      <div class="photoHint">This logo appears in the worker kiosk for this company.</div>
+      <img id="signupCompanyLogoPreview" class="companyLogoPreview hidden">
+    </div>
     <input id="signupEmail" placeholder="Owner email">
     <input id="signupPass" type="password" placeholder="Password">
     <div class="row">
@@ -459,6 +477,37 @@ main{animation:screenEnter .35s ease}
 
   <section id="settingsTab" class="hidden">
     <div class="card">
+      <h3>Company Branding</h3>
+      <div id="currentCompanyLogoBox"></div>
+      <input id="companyDisplayName" placeholder="Company display name">
+      <div class="copyBox" id="companyCodeCopyBox"></div>
+      <button onclick="copyCompanyCode()">Copy Company Code</button>
+      <div class="photoBox">
+        <input id="settingsCompanyLogo" class="photoInput" type="file" accept="image/*">
+        <label for="settingsCompanyLogo" class="photoBtn">🏢 Replace Company Logo</label>
+        <div class="photoHint">Optional. This logo appears in the worker kiosk.</div>
+        <img id="settingsCompanyLogoPreview" class="companyLogoPreview hidden">
+      </div>
+      <button onclick="saveCompanyBranding()">Save Branding</button>
+      <div id="brandingMsg" class="muted"></div>
+    </div>
+
+
+    <div class="card">
+      <h3>Worker Kiosk QR Access</h3>
+      <p class="muted">Workers can scan this QR or open the link to enter this company kiosk automatically.</p>
+      <div class="qrBox">
+        <div class="copyBox" id="workerDirectCodeBox"></div>
+        <div class="linkBox" id="workerDirectLink"></div>
+        <img id="workerQR" alt="Worker kiosk QR code">
+        <div class="row">
+          <button onclick="copyWorkerLink()">Copy Worker Link</button>
+          <button onclick="downloadWorkerQR()">Download QR</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>GPS Lock Settings</h3>
       <input id="siteLat" placeholder="Latitude">
       <input id="siteLng" placeholder="Longitude">
@@ -496,7 +545,7 @@ main{animation:screenEnter .35s ease}
 <main id="kiosk" class="hidden">
   <div class="brand"><img src="logo.png"><div>BeeShift Kiosk</div></div>
   <div class="card">
-    <div id="kioskCompany" class="muted"></div>
+    <div id="kioskCompanyLogo"></div><div id="kioskCompany" class="muted"></div>
     <div class="row"><button class="smallLink" onclick="leaveKiosk()">Change Company</button></div>
   </div>
   <div class="card"><h3>Workers</h3><div id="kioskWorkers"></div></div>
@@ -702,7 +751,7 @@ async function init(){
     F.onAuthStateChanged(auth,async u=>{
       currentUser=u;
       if(u){await loadUserCompany(u);startApp()}
-      else screen('home');
+      else{const loaded=await autoLoadCompanyFromURL();if(!loaded)screen('home')}
     });
   }catch(e){
     screen('setup');
@@ -717,6 +766,7 @@ async function createOrUpdateCompany(user,companyInput,companyName=''){
   await F.setDoc(companyRef(),{
     companyId:currentCompanyId,
     name:companyName||currentCompanyId,
+    logo:companyLogoData||null,
     ownerUid:user.uid,
     ownerEmail:user.email,
     plan:'basic',
@@ -750,6 +800,10 @@ window.signup=async()=>{
     const code=document.getElementById('signupCompanyCode').value.trim();
     const name=document.getElementById('signupCompanyName').value.trim();
     if(!email||!pass||!code)return msg('signupMsg','Fill company code, email and password');
+
+    currentCompanyId=cleanCompany(code);
+    const existing=await F.getDoc(companyRef());
+    if(existing.exists())return msg('signupMsg','Company code already taken. Choose another.');
 
     const cred=await F.createUserWithEmailAndPassword(auth,email,pass);
     await createOrUpdateCompany(cred.user,code,name);
@@ -786,7 +840,8 @@ async function loadKioskCompanyByCode(code){
 
   if(companySettings.status==='deleted'||companySettings.status==='pending_delete')throw new Error('Company account inactive');
 
-  document.getElementById('kioskCompany').innerHTML=`Company: <b>${currentCompanyId}</b>`;
+  document.getElementById('kioskCompany').innerHTML=`Company: <b>${companySettings.name||currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
+  renderCompanyLogo();
   listenData();
   screen('kiosk');
 }
@@ -806,9 +861,90 @@ window.leaveKiosk=()=>{
   screen('kioskStart');
 }
 
+
+function renderCompanyLogo(){
+  const logo=companySettings.logo;
+  const adminBox=document.getElementById('currentCompanyLogoBox');
+  if(adminBox)adminBox.innerHTML=logo?`<img class="companyLogoPreview" src="${logo}">`:'<p class="muted">No company logo uploaded yet.</p>';
+  const kioskLogo=document.getElementById('kioskCompanyLogo');
+  if(kioskLogo)kioskLogo.innerHTML=logo?`<img class="companyKioskLogo" src="${logo}">`:'';
+}
+window.copyCompanyCode=async()=>{
+  try{
+    await navigator.clipboard.writeText(currentCompanyId);
+    alert('Company code copied: '+currentCompanyId);
+  }catch(e){
+    alert('Company code: '+currentCompanyId);
+  }
+}
+window.saveCompanyBranding=async()=>{
+  const name=document.getElementById('companyDisplayName')?.value.trim()||currentCompanyId;
+  const data={name,updatedAt:new Date().toISOString()};
+  if(settingsCompanyLogoData)data.logo=settingsCompanyLogoData;
+  await F.setDoc(companyRef(),data,{merge:true});
+  companySettings={...companySettings,...data};
+  settingsCompanyLogoData=null;
+  const f=document.getElementById('settingsCompanyLogo'); if(f)f.value='';
+  const p=document.getElementById('settingsCompanyLogoPreview'); if(p){p.src='';p.classList.add('hidden')}
+  renderCompanyLogo();
+  msg('brandingMsg','Company branding saved','ok');
+}
+
+
+function workerDirectURL(){
+  const base=location.origin+location.pathname;
+  return `${base}?company=${encodeURIComponent(currentCompanyId)}`;
+}
+function renderWorkerAccess(){
+  const url=workerDirectURL();
+  const codeBox=document.getElementById('workerDirectCodeBox');
+  const linkBox=document.getElementById('workerDirectLink');
+  const qr=document.getElementById('workerQR');
+  if(codeBox)codeBox.textContent='Company Code: '+currentCompanyId;
+  if(linkBox)linkBox.textContent=url;
+  if(qr)qr.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(url);
+}
+window.copyWorkerLink=async()=>{
+  const url=workerDirectURL();
+  try{
+    await navigator.clipboard.writeText(url);
+    alert('Worker link copied');
+  }catch(e){
+    alert(url);
+  }
+}
+window.downloadWorkerQR=()=>{
+  const qr=document.getElementById('workerQR');
+  if(!qr||!qr.src)return alert('QR not ready');
+  const a=document.createElement('a');
+  a.href=qr.src;
+  a.download='beeshift-worker-kiosk-qr.png';
+  a.target='_blank';
+  a.click();
+}
+async function autoLoadCompanyFromURL(){
+  const params=new URLSearchParams(window.location.search);
+  const company=params.get('company');
+  if(!company)return false;
+  const input=document.getElementById('kioskCompanyCode');
+  if(input)input.value=company;
+  try{
+    await loadKioskCompanyByCode(company);
+    return true;
+  }catch(e){
+    screen('kioskStart');
+    msg('kioskStartMsg',e.message);
+    return true;
+  }
+}
+
 function startApp(){
-  document.getElementById('companyInfo').innerHTML=`Owner: <b>${currentUser.email}</b><br>Company: <b>${currentCompanyId}</b>`;
-  document.getElementById('kioskCompany').innerHTML=`Company: <b>${currentCompanyId}</b>`;
+  document.getElementById('companyInfo').innerHTML=`Owner: <b>${currentUser.email}</b><br>Company: <b>${companySettings.name||currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
+  document.getElementById('kioskCompany').innerHTML=`Company: <b>${companySettings.name||currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
+  const displayName=document.getElementById('companyDisplayName'); if(displayName)displayName.value=companySettings.name||currentCompanyId;
+  const codeBox=document.getElementById('companyCodeCopyBox'); if(codeBox)codeBox.textContent='Company Code: '+currentCompanyId;
+  renderCompanyLogo();
+  renderWorkerAccess();
   document.getElementById('siteLat').value=companySettings.siteLat||'';
   document.getElementById('siteLng').value=companySettings.siteLng||'';
   document.getElementById('siteRadius').value=companySettings.radiusMeters||150;
@@ -1239,6 +1375,28 @@ document.addEventListener('change',async e=>{
       img.src=editWorkerProfilePhotoData;
       img.classList.remove('hidden');
     }catch(err){alert('Profile photo error: '+err.message)}
+  }
+
+  if(e.target?.id==='signupCompanyLogo'){
+    const f=e.target.files[0];
+    if(!f)return;
+    try{
+      companyLogoData=await compressImage(f);
+      const img=document.getElementById('signupCompanyLogoPreview');
+      img.src=companyLogoData;
+      img.classList.remove('hidden');
+    }catch(err){alert('Company logo error: '+err.message)}
+  }
+
+  if(e.target?.id==='settingsCompanyLogo'){
+    const f=e.target.files[0];
+    if(!f)return;
+    try{
+      settingsCompanyLogoData=await compressImage(f);
+      const img=document.getElementById('settingsCompanyLogoPreview');
+      img.src=settingsCompanyLogoData;
+      img.classList.remove('hidden');
+    }catch(err){alert('Company logo error: '+err.message)}
   }
 });
 
