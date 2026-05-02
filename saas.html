@@ -332,6 +332,11 @@ main{animation:screenEnter .35s ease}
 .copyBox{background:#111;border:1px solid var(--border);border-radius:14px;padding:10px;margin:8px 0;color:var(--accent);font-weight:900;text-align:center}
 .codeHint{font-size:12px;color:var(--muted);margin-top:-4px;margin-bottom:8px}
 
+
+.qrBox{background:#111;border:1px solid var(--border);border-radius:18px;padding:14px;margin:10px 0;text-align:center}
+.qrBox img{width:210px;height:210px;border-radius:16px;background:#fff;padding:10px;margin:10px auto;display:block}
+.linkBox{word-break:break-all;background:#0b0b0b;border:1px solid #333;border-radius:12px;padding:10px;color:var(--accent);font-size:13px}
+
 </style>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
@@ -485,6 +490,21 @@ main{animation:screenEnter .35s ease}
       </div>
       <button onclick="saveCompanyBranding()">Save Branding</button>
       <div id="brandingMsg" class="muted"></div>
+    </div>
+
+
+    <div class="card">
+      <h3>Worker Kiosk QR / Link Access</h3>
+      <p class="muted">Share this QR or link with workers. They will enter this company kiosk automatically.</p>
+      <div class="qrBox">
+        <div class="copyBox" id="workerDirectCodeBox"></div>
+        <div class="linkBox" id="workerDirectLink"></div>
+        <img id="workerQR" alt="Worker kiosk QR code">
+        <div class="row">
+          <button onclick="copyWorkerLink()">Copy Worker Link</button>
+          <button onclick="downloadWorkerQR()">Download QR</button>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -731,7 +751,7 @@ async function init(){
     F.onAuthStateChanged(auth,async u=>{
       currentUser=u;
       if(u){await loadUserCompany(u);startApp()}
-      else screen('home');
+      else{const loaded=await autoLoadCompanyFromURL();if(!loaded)screen('home')}
     });
   }catch(e){
     screen('setup');
@@ -870,12 +890,61 @@ window.saveCompanyBranding=async()=>{
   msg('brandingMsg','Company branding saved','ok');
 }
 
+
+function workerDirectURL(){
+  const base=location.origin+location.pathname;
+  return `${base}?company=${encodeURIComponent(currentCompanyId)}`;
+}
+function renderWorkerAccess(){
+  const url=workerDirectURL();
+  const codeBox=document.getElementById('workerDirectCodeBox');
+  const linkBox=document.getElementById('workerDirectLink');
+  const qr=document.getElementById('workerQR');
+  if(codeBox)codeBox.textContent='Company Code: '+currentCompanyId;
+  if(linkBox)linkBox.textContent=url;
+  if(qr)qr.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(url);
+}
+window.copyWorkerLink=async()=>{
+  const url=workerDirectURL();
+  try{
+    await navigator.clipboard.writeText(url);
+    alert('Worker link copied');
+  }catch(e){
+    alert(url);
+  }
+}
+window.downloadWorkerQR=()=>{
+  const qr=document.getElementById('workerQR');
+  if(!qr||!qr.src)return alert('QR not ready');
+  const a=document.createElement('a');
+  a.href=qr.src;
+  a.download='beeshift-worker-kiosk-qr.png';
+  a.target='_blank';
+  a.click();
+}
+async function autoLoadCompanyFromURL(){
+  const params=new URLSearchParams(window.location.search);
+  const company=params.get('company');
+  if(!company)return false;
+  const input=document.getElementById('kioskCompanyCode');
+  if(input)input.value=company;
+  try{
+    await loadKioskCompanyByCode(company);
+    return true;
+  }catch(e){
+    screen('kioskStart');
+    msg('kioskStartMsg',e.message);
+    return true;
+  }
+}
+
 function startApp(){
   document.getElementById('companyInfo').innerHTML=`Owner: <b>${currentUser.email}</b><br>Company: <b>${companySettings.name||currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
   document.getElementById('kioskCompany').innerHTML=`Company: <b>${companySettings.name||currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
   const displayName=document.getElementById('companyDisplayName'); if(displayName)displayName.value=companySettings.name||currentCompanyId;
   const codeBox=document.getElementById('companyCodeCopyBox'); if(codeBox)codeBox.textContent='Company Code: '+currentCompanyId;
   renderCompanyLogo();
+  renderWorkerAccess();
   document.getElementById('siteLat').value=companySettings.siteLat||'';
   document.getElementById('siteLng').value=companySettings.siteLng||'';
   document.getElementById('siteRadius').value=companySettings.radiusMeters||150;
@@ -1172,7 +1241,7 @@ window.addWorker=async()=>{
     const img=document.getElementById('workerProfilePreview');
     if(file)file.value='';
     if(img){img.src='';img.classList.add('hidden')}
-    workerProfilePhotoData=null,editWorkerProfilePhotoData=null,companyLogoData=null,settingsCompanyLogoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
+    workerProfilePhotoData=null,editWorkerProfilePhotoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
   }catch(e){alert('Add worker error: '+e.message)}
 }
 
