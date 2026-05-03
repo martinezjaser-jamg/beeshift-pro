@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <title>BeeShift Face Match Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+
+  <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
   <style>
     body{
@@ -88,8 +88,21 @@ document.getElementById("selfieInput").onchange = e => {
   }
 };
 
+async function waitForFaceApi(){
+  let tries = 0;
+  while(!window.faceapi && tries < 30){
+    await new Promise(r => setTimeout(r, 200));
+    tries++;
+  }
+  if(!window.faceapi){
+    throw new Error("Face API did not load. Check internet/CDN.");
+  }
+}
+
 async function loadModels(){
   if(modelsLoaded) return;
+
+  await waitForFaceApi();
 
   document.getElementById("result").textContent = "Loading models...";
   document.getElementById("details").textContent = "First time can take 5–15 seconds.";
@@ -103,14 +116,10 @@ async function loadModels(){
   modelsLoaded = true;
 }
 
-async function fileToImage(file){
-  return await faceapi.bufferToImage(file);
-}
-
 async function getFaceDescriptor(file){
-  const img = await fileToImage(file);
+  const img = await faceapi.bufferToImage(file);
 
-  const detection = await faceapi
+  return await faceapi
     .detectSingleFace(
       img,
       new faceapi.TinyFaceDetectorOptions({
@@ -120,8 +129,6 @@ async function getFaceDescriptor(file){
     )
     .withFaceLandmarks()
     .withFaceDescriptor();
-
-  return detection;
 }
 
 async function runMatch(){
@@ -168,9 +175,7 @@ async function runMatch(){
       emoji = "❌";
     }
 
-    document.getElementById("result").textContent =
-      `${status} ${emoji}`;
-
+    document.getElementById("result").textContent = `${status} ${emoji}`;
     document.getElementById("details").textContent =
       `Face distance score: ${distance.toFixed(3)} | Lower score = better match`;
 
