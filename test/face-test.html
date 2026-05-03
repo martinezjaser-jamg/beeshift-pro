@@ -2,100 +2,184 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Face Match Test</title>
+  <title>BeeShift Face Match Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
 
   <style>
-    body{font-family:Arial;background:#111;color:#fff;text-align:center;padding:20px}
-    .box{background:#222;padding:20px;border-radius:16px;margin:10px}
-    img{max-width:200px;border-radius:12px;margin:10px}
-    button{padding:12px 20px;margin:10px;border-radius:10px;background:#f5c400;border:0;font-weight:bold}
+    body{
+      margin:0;
+      font-family:Arial;
+      background:#111;
+      color:white;
+      text-align:center;
+      padding:18px;
+    }
+    .box{
+      background:#222;
+      padding:18px;
+      border-radius:18px;
+      margin:14px auto;
+      max-width:520px;
+    }
+    img{
+      max-width:260px;
+      border-radius:14px;
+      margin:10px auto;
+      display:block;
+    }
+    button{
+      padding:14px 22px;
+      border-radius:12px;
+      border:0;
+      background:#f5c400;
+      font-weight:900;
+      font-size:16px;
+      margin:10px;
+    }
+    #result{
+      font-size:30px;
+      font-weight:900;
+      margin-top:20px;
+    }
+    .muted{color:#aaa}
   </style>
 </head>
 
 <body>
 
-<h1>🧪 Face Match Test</h1>
+<h1>🧪 BeeShift Face Match Test</h1>
+<p class="muted">Profile photo vs clock-in selfie</p>
 
 <div class="box">
-  <h3>Upload Profile Photo</h3>
-  <input type="file" id="profileInput">
+  <h2>Upload Profile Photo</h2>
+  <input type="file" id="profileInput" accept="image/*">
   <img id="profilePreview">
 </div>
 
 <div class="box">
-  <h3>Upload Selfie</h3>
-  <input type="file" id="selfieInput">
+  <h2>Upload Selfie</h2>
+  <input type="file" id="selfieInput" accept="image/*" capture="user">
   <img id="selfiePreview">
 </div>
 
 <button onclick="runMatch()">Compare Faces</button>
 
-<h2 id="result"></h2>
+<div id="result"></div>
+<p id="details" class="muted"></p>
 
 <script>
+let profileFile = null;
+let selfieFile = null;
+let modelsLoaded = false;
 
-let profileImg, selfieImg;
-
-// preview images
-document.getElementById('profileInput').onchange = e=>{
-  const file = e.target.files[0];
-  profileImg = file;
-  document.getElementById('profilePreview').src = URL.createObjectURL(file);
+document.getElementById("profileInput").onchange = e => {
+  profileFile = e.target.files[0];
+  if(profileFile){
+    document.getElementById("profilePreview").src = URL.createObjectURL(profileFile);
+  }
 };
 
-document.getElementById('selfieInput').onchange = e=>{
-  const file = e.target.files[0];
-  selfieImg = file;
-  document.getElementById('selfiePreview').src = URL.createObjectURL(file);
+document.getElementById("selfieInput").onchange = e => {
+  selfieFile = e.target.files[0];
+  if(selfieFile){
+    document.getElementById("selfiePreview").src = URL.createObjectURL(selfieFile);
+  }
 };
 
-// load models
 async function loadModels(){
-  await faceapi.nets.ssdMobilenetv1.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
-  await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
-  await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+  if(modelsLoaded) return;
+
+  document.getElementById("result").textContent = "Loading models...";
+  document.getElementById("details").textContent = "First time can take 5–15 seconds.";
+
+  const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
+
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+  modelsLoaded = true;
+}
+
+async function fileToImage(file){
+  return await faceapi.bufferToImage(file);
+}
+
+async function getFaceDescriptor(file){
+  const img = await fileToImage(file);
+
+  const detection = await faceapi
+    .detectSingleFace(
+      img,
+      new faceapi.TinyFaceDetectorOptions({
+        inputSize: 320,
+        scoreThreshold: 0.4
+      })
+    )
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  return detection;
 }
 
 async function runMatch(){
-  if(!profileImg || !selfieImg){
-    alert("Upload both images");
+  if(!profileFile || !selfieFile){
+    alert("Upload both images first.");
     return;
   }
 
-  document.getElementById('result').textContent = "Processing...";
+  try{
+    await loadModels();
 
-  await loadModels();
+    document.getElementById("result").textContent = "Processing...";
+    document.getElementById("details").textContent = "";
 
-  const img1 = await faceapi.bufferToImage(profileImg);
-  const img2 = await faceapi.bufferToImage(selfieImg);
+    const profileDetection = await getFaceDescriptor(profileFile);
+    const selfieDetection = await getFaceDescriptor(selfieFile);
 
-  const d1 = await faceapi.detectSingleFace(img1).withFaceLandmarks().withFaceDescriptor();
-  const d2 = await faceapi.detectSingleFace(img2).withFaceLandmarks().withFaceDescriptor();
+    if(!profileDetection){
+      document.getElementById("result").textContent = "Profile face not detected ❌";
+      return;
+    }
 
-  if(!d1 || !d2){
-    document.getElementById('result').textContent = "Face not detected ❌";
-    return;
+    if(!selfieDetection){
+      document.getElementById("result").textContent = "Selfie face not detected ❌";
+      return;
+    }
+
+    const distance = faceapi.euclideanDistance(
+      profileDetection.descriptor,
+      selfieDetection.descriptor
+    );
+
+    let status = "";
+    let emoji = "";
+
+    if(distance < 0.45){
+      status = "MATCH";
+      emoji = "✅";
+    }else if(distance < 0.60){
+      status = "REVIEW";
+      emoji = "⚠️";
+    }else{
+      status = "NO MATCH";
+      emoji = "❌";
+    }
+
+    document.getElementById("result").textContent =
+      `${status} ${emoji}`;
+
+    document.getElementById("details").textContent =
+      `Face distance score: ${distance.toFixed(3)} | Lower score = better match`;
+
+  }catch(err){
+    document.getElementById("result").textContent = "Error ❌";
+    document.getElementById("details").textContent = err.message;
+    console.error(err);
   }
-
-  const distance = faceapi.euclideanDistance(d1.descriptor, d2.descriptor);
-
-  let resultText;
-
-  if(distance < 0.45){
-    resultText = "MATCH ✅";
-  }else if(distance < 0.6){
-    resultText = "REVIEW ⚠️";
-  }else{
-    resultText = "NO MATCH ❌";
-  }
-
-  document.getElementById('result').textContent =
-    resultText + " (score: " + distance.toFixed(2) + ")";
 }
-
 </script>
 
 </body>
