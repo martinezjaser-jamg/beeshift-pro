@@ -5,7 +5,8 @@
   <title>BeeShift Face Match Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <!-- FACE API (estable para iPhone) -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
   <style>
     body{
@@ -74,6 +75,14 @@ let profileFile = null;
 let selfieFile = null;
 let modelsLoaded = false;
 
+// verificar carga de faceapi
+window.addEventListener('load', () => {
+  if(!window.faceapi){
+    alert("Face API failed to load. Check internet.");
+  }
+});
+
+// preview imágenes
 document.getElementById("profileInput").onchange = e => {
   profileFile = e.target.files[0];
   if(profileFile){
@@ -88,24 +97,12 @@ document.getElementById("selfieInput").onchange = e => {
   }
 };
 
-async function waitForFaceApi(){
-  let tries = 0;
-  while(!window.faceapi && tries < 30){
-    await new Promise(r => setTimeout(r, 200));
-    tries++;
-  }
-  if(!window.faceapi){
-    throw new Error("Face API did not load. Check internet/CDN.");
-  }
-}
-
+// cargar modelos
 async function loadModels(){
   if(modelsLoaded) return;
 
-  await waitForFaceApi();
-
   document.getElementById("result").textContent = "Loading models...";
-  document.getElementById("details").textContent = "First time can take 5–15 seconds.";
+  document.getElementById("details").textContent = "First time may take 5–15 seconds";
 
   const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
 
@@ -116,7 +113,8 @@ async function loadModels(){
   modelsLoaded = true;
 }
 
-async function getFaceDescriptor(file){
+// detectar cara
+async function getDescriptor(file){
   const img = await faceapi.bufferToImage(file);
 
   return await faceapi
@@ -131,9 +129,10 @@ async function getFaceDescriptor(file){
     .withFaceDescriptor();
 }
 
+// ejecutar comparación
 async function runMatch(){
   if(!profileFile || !selfieFile){
-    alert("Upload both images first.");
+    alert("Upload both images");
     return;
   }
 
@@ -143,23 +142,20 @@ async function runMatch(){
     document.getElementById("result").textContent = "Processing...";
     document.getElementById("details").textContent = "";
 
-    const profileDetection = await getFaceDescriptor(profileFile);
-    const selfieDetection = await getFaceDescriptor(selfieFile);
+    const d1 = await getDescriptor(profileFile);
+    const d2 = await getDescriptor(selfieFile);
 
-    if(!profileDetection){
+    if(!d1){
       document.getElementById("result").textContent = "Profile face not detected ❌";
       return;
     }
 
-    if(!selfieDetection){
+    if(!d2){
       document.getElementById("result").textContent = "Selfie face not detected ❌";
       return;
     }
 
-    const distance = faceapi.euclideanDistance(
-      profileDetection.descriptor,
-      selfieDetection.descriptor
-    );
+    const distance = faceapi.euclideanDistance(d1.descriptor, d2.descriptor);
 
     let status = "";
     let emoji = "";
@@ -167,17 +163,17 @@ async function runMatch(){
     if(distance < 0.45){
       status = "MATCH";
       emoji = "✅";
-    }else if(distance < 0.60){
+    } else if(distance < 0.6){
       status = "REVIEW";
       emoji = "⚠️";
-    }else{
+    } else {
       status = "NO MATCH";
       emoji = "❌";
     }
 
-    document.getElementById("result").textContent = `${status} ${emoji}`;
+    document.getElementById("result").textContent = status + " " + emoji;
     document.getElementById("details").textContent =
-      `Face distance score: ${distance.toFixed(3)} | Lower score = better match`;
+      "Score: " + distance.toFixed(3) + " (lower = better match)";
 
   }catch(err){
     document.getElementById("result").textContent = "Error ❌";
