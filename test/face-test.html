@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Face Match Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+
+  <style>
+    body{font-family:Arial;background:#111;color:#fff;text-align:center;padding:20px}
+    .box{background:#222;padding:20px;border-radius:16px;margin:10px}
+    img{max-width:200px;border-radius:12px;margin:10px}
+    button{padding:12px 20px;margin:10px;border-radius:10px;background:#f5c400;border:0;font-weight:bold}
+  </style>
+</head>
+
+<body>
+
+<h1>🧪 Face Match Test</h1>
+
+<div class="box">
+  <h3>Upload Profile Photo</h3>
+  <input type="file" id="profileInput">
+  <img id="profilePreview">
+</div>
+
+<div class="box">
+  <h3>Upload Selfie</h3>
+  <input type="file" id="selfieInput">
+  <img id="selfiePreview">
+</div>
+
+<button onclick="runMatch()">Compare Faces</button>
+
+<h2 id="result"></h2>
+
+<script>
+
+let profileImg, selfieImg;
+
+// preview images
+document.getElementById('profileInput').onchange = e=>{
+  const file = e.target.files[0];
+  profileImg = file;
+  document.getElementById('profilePreview').src = URL.createObjectURL(file);
+};
+
+document.getElementById('selfieInput').onchange = e=>{
+  const file = e.target.files[0];
+  selfieImg = file;
+  document.getElementById('selfiePreview').src = URL.createObjectURL(file);
+};
+
+// load models
+async function loadModels(){
+  await faceapi.nets.ssdMobilenetv1.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+  await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+  await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+}
+
+async function runMatch(){
+  if(!profileImg || !selfieImg){
+    alert("Upload both images");
+    return;
+  }
+
+  document.getElementById('result').textContent = "Processing...";
+
+  await loadModels();
+
+  const img1 = await faceapi.bufferToImage(profileImg);
+  const img2 = await faceapi.bufferToImage(selfieImg);
+
+  const d1 = await faceapi.detectSingleFace(img1).withFaceLandmarks().withFaceDescriptor();
+  const d2 = await faceapi.detectSingleFace(img2).withFaceLandmarks().withFaceDescriptor();
+
+  if(!d1 || !d2){
+    document.getElementById('result').textContent = "Face not detected ❌";
+    return;
+  }
+
+  const distance = faceapi.euclideanDistance(d1.descriptor, d2.descriptor);
+
+  let resultText;
+
+  if(distance < 0.45){
+    resultText = "MATCH ✅";
+  }else if(distance < 0.6){
+    resultText = "REVIEW ⚠️";
+  }else{
+    resultText = "NO MATCH ❌";
+  }
+
+  document.getElementById('result').textContent =
+    resultText + " (score: " + distance.toFixed(2) + ")";
+}
+
+</script>
+
+</body>
+</html>
