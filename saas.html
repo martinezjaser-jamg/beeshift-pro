@@ -337,6 +337,10 @@ main{animation:screenEnter .35s ease}
 .qrBox img{width:210px;height:210px;border-radius:16px;background:#fff;padding:10px;margin:10px auto;display:block}
 .linkBox{word-break:break-all;background:#0b0b0b;border:1px solid #333;border-radius:12px;padding:10px;color:var(--accent);font-size:13px}
 
+
+.liveStatsCard{background:#171200;border:1px solid var(--border);border-radius:18px;padding:14px;margin-top:10px}
+.liveStatsCard p{margin:8px 0}
+.pdfBtn{background:#fff3b0!important;color:#1a1400!important}
 </style>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
@@ -564,6 +568,16 @@ main{animation:screenEnter .35s ease}
     <div class="earnGrid">
       <div class="earnCard"><small>Today</small><b id="todayEarn">$0.00</b><span id="todayHours">0.00h</span></div>
       <div class="earnCard"><small>This Week</small><b id="weekEarn">$0.00</b><span id="weekHours">0.00h</span></div>
+    </div>
+
+    <div class="liveStatsCard">
+      <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
+      <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
+      <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
+      <div class="row">
+        <button class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
+        <button class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
+      </div>
     </div>
 
     <p>Status: <b id="workerStatus">Out</b></p>
@@ -1447,6 +1461,92 @@ function workerEntries(range){
     .filter(e=>range==='today'?isToday(e):range==='week'?isThisWeek(e):true);
 }
 
+
+function formatDurationMs(ms){
+  let total=Math.max(0,Math.floor(ms/1000));
+  let h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function formatBreakMinutes(ms){
+  let total=Math.max(0,Math.floor(ms/60000));
+  let h=Math.floor(total/60),m=total%60;
+  return h>0?`${h}h ${m}m`:`${m}m`;
+}
+function activeWorkedMs(entry){
+  if(!entry||!entry.inTime)return 0;
+  let now=new Date(),start=new Date(entry.inTime);
+  let breakMs=(entry.breakMins||0)*60000;
+  if(entry.breakStart)breakMs+=now-new Date(entry.breakStart);
+  return Math.max(0,now-start-breakMs);
+}
+function updateLiveStats(){
+  if(!selectedWorker)return;
+  const entry=openEntry(selectedWorker.id);
+  const workEl=document.getElementById('liveWorkTime');
+  const earnEl=document.getElementById('liveEarnings');
+  const breakRow=document.getElementById('breakRow');
+  const breakEl=document.getElementById('liveBreakTime');
+  if(!workEl||!earnEl)return;
+  if(!entry){
+    workEl.textContent='00:00:00';
+    earnEl.textContent='$0.00';
+    if(breakRow)breakRow.style.display='none';
+    return;
+  }
+  const workedMs=activeWorkedMs(entry);
+  const livePay=(workedMs/3600000)*Number(selectedWorker.rate||0);
+  workEl.textContent=formatDurationMs(workedMs);
+  earnEl.textContent=money(livePay);
+  if(entry.breakStart){
+    let breakMs=(entry.breakMins||0)*60000+(new Date()-new Date(entry.breakStart));
+    if(breakRow)breakRow.style.display='block';
+    if(breakEl)breakEl.textContent=formatBreakMinutes(breakMs);
+  }else{
+    if(breakRow)breakRow.style.display='none';
+  }
+}
+function entriesForWorkerRange(range){
+  if(!selectedWorker)return[];
+  const todayStr=fmtDate(new Date());
+  const start=weekStart();
+  return entries.filter(e=>{
+    if(e.workerId!==selectedWorker.id)return false;
+    const d=new Date(e.inTime);
+    if(range==='today')return fmtDate(e.inTime)===todayStr;
+    if(range==='week')return d>=start;
+    return true;
+  });
+}
+function escapeHtml(v){
+  return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+function premiumPayPDF(range){
+  if(!selectedWorker)return alert('No worker selected.');
+  const rows=entriesForWorkerRange(range);
+  const rate=Number(selectedWorker.rate||0);
+  const companyName=companySettings.name||currentCompanyId||'BeeShift';
+  const companyCode=currentCompanyId||'';
+  const workerName=selectedWorker.name||'Worker';
+  const title=range==='today'?'Daily Earnings Statement':'Weekly Earnings Statement';
+  const period=range==='today'?fmtDate(new Date()):`${fmtDate(weekStart())} to ${fmtDate(new Date())}`;
+  let totalHours=0,totalBreak=0,totalPay=0;
+  const rowHtml=rows.map(e=>{
+    const h=hours(e),pay=h*rate;
+    totalHours+=h;totalBreak+=Number(e.breakMins||0);totalPay+=pay;
+    return `<tr><td>${escapeHtml(fmtDate(e.inTime))}</td><td>${escapeHtml(fmtTime(e.inTime))}</td><td>${e.outTime?escapeHtml(fmtTime(e.outTime)):'Active'}</td><td>${Number(e.breakMins||0)}m</td><td>${h.toFixed(2)}</td><td>${money(rate)}</td><td>${money(pay)}</td></tr>`;
+  }).join('');
+  const logo=companySettings.logo||'logo.png';
+  const generated=new Date().toLocaleString();
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
+  *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:28px;color:#1a1400;background:#fff}.invoice{max-width:860px;margin:0 auto;border:1px solid #e5d28a;border-radius:18px;overflow:hidden}.header{background:linear-gradient(135deg,#1a1400,#3a2d00);color:#fff8e0;padding:26px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;align-items:center;gap:14px}.brand img{width:72px;height:72px;border-radius:18px;object-fit:contain;background:#f5c400;padding:5px}.brand h1{margin:0;color:#f5c400;font-size:26px}.brand p{margin:3px 0;color:#fff8e0}.badge{border:1px solid #f5c400;border-radius:999px;padding:8px 12px;color:#f5c400;font-weight:bold;text-align:center}.section{padding:22px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.box{border:1px solid #ecd77b;border-radius:14px;padding:14px;background:#fffaf0}.box small{display:block;color:#7a6400;text-transform:uppercase;font-size:11px;letter-spacing:.06em}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f5c400;color:#1a1400;padding:10px;font-size:12px;text-align:left}td{border-bottom:1px solid #eee;padding:10px;font-size:13px}.totals{display:flex;justify-content:flex-end;margin-top:18px}.totalBox{min-width:280px;border:2px solid #f5c400;border-radius:16px;padding:16px;background:#fff8d6}.totalLine{display:flex;justify-content:space-between;margin:8px 0}.grand{font-size:22px;font-weight:900;color:#1a1400;border-top:1px solid #d1b000;padding-top:10px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:42px}.sig{border-top:1px solid #1a1400;padding-top:8px;text-align:center;color:#5b4b00}.footer{text-align:center;color:#7a6400;font-size:12px;margin-top:22px}@media print{body{padding:0}.invoice{border-radius:0;border:0}}
+  </style></head><body><div class="invoice"><div class="header"><div class="brand"><img src="${logo}"><div><h1>${escapeHtml(companyName)}</h1><p>BeeShift Payroll Statement</p><p>Company Code: ${escapeHtml(companyCode)}</p></div></div><div class="badge">${escapeHtml(title)}</div></div><div class="section"><div class="meta"><div class="box"><small>Worker</small><b>${escapeHtml(workerName)}</b></div><div class="box"><small>Period</small><b>${escapeHtml(period)}</b></div><div class="box"><small>Hourly Rate</small><b>${money(rate)}</b></div><div class="box"><small>Generated</small><b>${escapeHtml(generated)}</b></div></div><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Break</th><th>Hours</th><th>Rate</th><th>Earnings</th></tr></thead><tbody>${rowHtml||'<tr><td colspan="7" style="text-align:center">No completed entries for this period.</td></tr>'}</tbody></table><div class="totals"><div class="totalBox"><div class="totalLine"><span>Total Hours</span><b>${totalHours.toFixed(2)}</b></div><div class="totalLine"><span>Total Break</span><b>${totalBreak}m</b></div><div class="totalLine grand"><span>Total Earnings</span><span>${money(totalPay)}</span></div></div></div><div class="signatures"><div class="sig">Worker Signature</div><div class="sig">Manager Approval</div></div><div class="footer">This statement is generated by BeeShift. Please review with your manager if corrections are needed.</div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script></body></html>`;
+  const w=window.open('','_blank');
+  if(!w)return alert('Popup blocked. Allow popups to generate PDF.');
+  w.document.open();w.document.write(html);w.document.close();
+}
+window.downloadDailyPDF=()=>premiumPayPDF('today');
+window.downloadWeeklyPDF=()=>premiumPayPDF('week');
+
 function renderWorkerScreen(){
   if(!selectedWorker)return;
 
@@ -1595,6 +1695,7 @@ window.deleteCompanyAccount=async()=>{
 setInterval(()=>{
   const el=document.getElementById('liveClock');
   if(el)el.textContent=new Date().toLocaleTimeString();
+  updateLiveStats();
 },1000);
 
 if('serviceWorker' in navigator){
