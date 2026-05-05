@@ -562,7 +562,7 @@ main{animation:screenEnter .35s ease}
       <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
     </div>
 
-    <p class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
+    <p id="photoNotice" class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
   </div>
 
   <div class="card"><h3>My recent entries</h3><div id="myEntries"></div></div>
@@ -667,7 +667,9 @@ window.toggleAppLang=()=>{
   appLang=appLang==='en'?'es':'en';
   localStorage.setItem('beeshift_lang',appLang);
   applyLang();
+  applyWorkerSpanishPatch();
   renderAll();
+  applyWorkerSpanishPatch();
 }
 function applyLang(){
   const b=document.getElementById('langToggleBtn');
@@ -711,7 +713,33 @@ window.openWorkerKioskStart=()=>{
 window.openAdminLogin=()=>screen('login');
 window.openCreateCompany=()=>screen('signup');
 
+
+function applyWorkerSpanishPatch(){
+  const isEs = appLang === 'es';
+
+  const daily = document.getElementById('dailyPdfBtn');
+  if(daily) daily.textContent = isEs ? '📄 PDF Diario' : '📄 Daily Pay PDF';
+
+  const weekly = document.getElementById('weeklyPdfBtn');
+  if(weekly) weekly.textContent = isEs ? '📄 PDF Semanal' : '📄 Weekly Pay PDF';
+
+  const notice = document.getElementById('photoNotice');
+  if(notice){
+    notice.textContent = isEs
+      ? 'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.'
+      : 'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.';
+  }
+
+  document.querySelectorAll('#workerScreen h3').forEach(h=>{
+    const text=(h.textContent||'').trim();
+    if(text==='My recent entries' || text==='Mis entradas recientes'){
+      h.textContent = isEs ? 'Mis entradas recientes' : 'My recent entries';
+    }
+  });
+}
+
 async function init(){
+  setTimeout(applyWorkerSpanishPatch,0);
   applyLang();
   try{
     const A=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
@@ -1510,6 +1538,7 @@ function renderWorkerScreen(){
   if(weekEarnEl)weekEarnEl.textContent=money(weekH*rate);
 
   updateLiveStats();
+  applyWorkerSpanishPatch();
   refreshLiveAdminDash();
 
   const myEntries=document.getElementById('myEntries');
