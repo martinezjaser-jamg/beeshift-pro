@@ -690,76 +690,14 @@ function screen(id){
 window.screen=screen;
 
 const T={
-  en:{
-    photoNotice:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.',
-    takePhoto:'📸 Take Required Clock Photo',
-    requiredOnly:'Required only for Clock In and Clock Out',
-    status:'Status',
-    out:'Out',
-    clockedIn:'Clocked In',
-    workTime:'⏱ Work Time',
-    liveEarnings:'💰 Live Earnings',
-    dailyPayPDF:'📄 Daily Pay PDF',
-    weeklyPayPDF:'📄 Weekly Pay PDF',
-    checkGPS:'Check GPS',
-    startBreak:'Start Break',
-    endBreak:'End Break',
-    exit:'Exit',
-    myRecentEntries:'My recent entries',
-    today:'Today',
-    thisWeek:'This Week',
-    workerKiosk:'👷 Worker Kiosk',
-    adminLogin:'🔐 Admin Login',
-    createCompany:'➕ Create Company',
-    dashboard:'Dashboard',
-    workers:'Workers',
-    payroll:'Payroll',
-    timeLogs:'Time Logs',
-    settings:'Settings',
-    logout:'Logout',
-    companyBranding:'Company Branding',
-    workerQR:'Worker Kiosk QR / Link Access',
-    saveBranding:'Save Branding',
-    copyCompanyCode:'Copy Company Code',
-    
+  en:{photoNotice:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.',takePhoto:'📸 Take Required Clock Photo',requiredOnly:'Required only for Clock In and Clock Out',out:'Out',clockedIn:'Clocked In',workTime:'⏱ Work Time',liveEarnings:'💰 Live Earnings',dailyPayPDF:'📄 Daily Pay PDF',weeklyPayPDF:'📄 Weekly Pay PDF',checkGPS:'Check GPS',startBreak:'Start Break',endBreak:'End Break',exit:'Exit',myRecentEntries:'My recent entries',today:'Today',thisWeek:'This Week',workerKiosk:'👷 Worker Kiosk',adminLogin:'🔐 Admin Login',createCompany:'➕ Create Company',dashboard:'Dashboard',workers:'Workers',payroll:'Payroll',timeLogs:'Time Logs',settings:'Settings',logout:'Logout',companyBranding:'Company Branding',workerQR:'Worker Kiosk QR / Link Access',saveBranding:'Save Branding',copyCompanyCode:'Copy Company Code',clockIn:'⏱ Clock In',clockOut:'⏹ Clock Out',
     workerKiosk:'👷 Worker Kiosk',adminLogin:'🔐 Admin Login',createCompany:'➕ Create Company',
     continue:'Continue',back:'Back',login:'Login',dashboard:'Dashboard',workers:'Workers',payroll:'Payroll',timeLogs:'Time Logs',settings:'Settings',
     clockIn:'⏱ Clock In',clockOut:'⏹ Clock Out',startBreak:'Start Break',endBreak:'End Break',checkGPS:'Check GPS',
     downloadToday:'Download Today',downloadWeek:'Download Week',photoLabel:'📸 Take Required Clock Photo',
     photoHint:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.'
   },
-  es:{
-    photoNotice:'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.',
-    takePhoto:'📸 Tomar Foto Requerida',
-    requiredOnly:'Requerida solo para Entrada y Salida',
-    status:'Estado',
-    out:'Fuera',
-    clockedIn:'En turno',
-    workTime:'⏱ Tiempo Trabajado',
-    liveEarnings:'💰 Ganancia en Vivo',
-    dailyPayPDF:'📄 PDF Diario',
-    weeklyPayPDF:'📄 PDF Semanal',
-    checkGPS:'Revisar GPS',
-    startBreak:'Iniciar Descanso',
-    endBreak:'Terminar Descanso',
-    exit:'Salir',
-    myRecentEntries:'Mis entradas recientes',
-    today:'Hoy',
-    thisWeek:'Esta Semana',
-    workerKiosk:'👷 Kiosko Trabajador',
-    adminLogin:'🔐 Admin',
-    createCompany:'➕ Crear Empresa',
-    dashboard:'Panel',
-    workers:'Trabajadores',
-    payroll:'Nómina',
-    timeLogs:'Registros',
-    settings:'Ajustes',
-    logout:'Cerrar Sesión',
-    companyBranding:'Marca de Empresa',
-    workerQR:'QR / Link para Trabajadores',
-    saveBranding:'Guardar Marca',
-    copyCompanyCode:'Copiar Código de Empresa',
-    
+  es:{photoNotice:'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.',takePhoto:'📸 Tomar Foto Requerida',requiredOnly:'Requerida solo para Entrada y Salida',out:'Fuera',clockedIn:'En turno',workTime:'⏱ Tiempo Trabajado',liveEarnings:'💰 Ganancia en Vivo',dailyPayPDF:'📄 PDF Diario',weeklyPayPDF:'📄 PDF Semanal',checkGPS:'Revisar GPS',startBreak:'Iniciar Descanso',endBreak:'Terminar Descanso',exit:'Salir',myRecentEntries:'Mis entradas recientes',today:'Hoy',thisWeek:'Esta Semana',workerKiosk:'👷 Kiosko Trabajador',adminLogin:'🔐 Admin',createCompany:'➕ Crear Empresa',dashboard:'Panel',workers:'Trabajadores',payroll:'Nómina',timeLogs:'Registros',settings:'Ajustes',logout:'Cerrar Sesión',companyBranding:'Marca de Empresa',workerQR:'QR / Link para Trabajadores',saveBranding:'Guardar Marca',copyCompanyCode:'Copiar Código de Empresa',clockIn:'⏱ Entrada',clockOut:'⏹ Salida',
     workerKiosk:'👷 Kiosko Trabajador',adminLogin:'🔐 Admin',createCompany:'➕ Crear Empresa',
     continue:'Continuar',back:'Atrás',login:'Entrar',dashboard:'Panel',workers:'Trabajadores',payroll:'Nómina',timeLogs:'Registros',settings:'Ajustes',
     clockIn:'⏱ Entrada',clockOut:'⏹ Salida',startBreak:'Iniciar Descanso',endBreak:'Terminar Descanso',checkGPS:'Revisar GPS',
@@ -768,48 +706,33 @@ const T={
   }
 };
 function tr(k){return (T[appLang]&&T[appLang][k])||T.en[k]||k}
-function setText(selector,text){document.querySelectorAll(selector).forEach(e=>e.textContent=text)}
-window.toggleAppLang=()=>{
-  appLang=appLang==='en'?'es':'en';
-  localStorage.setItem('beeshift_lang',appLang);
-  applyLang();
-  renderAll();
-}
 
 function setText(selector,text){
   document.querySelectorAll(selector).forEach(e=>e.textContent=text);
-}
-function setPlaceholder(id,text){
-  const e=document.getElementById(id);
-  if(e)e.placeholder=text;
 }
 function applyLang(){
   const b=document.getElementById('langToggleBtn');
   if(b)b.textContent=appLang==='en'?'Español':'English';
   document.documentElement.lang=appLang;
 
-  // Home / main navigation
   setText('button[onclick="openWorkerKioskStart()"]',tr('workerKiosk'));
   setText('button[onclick="openAdminLogin()"]',tr('adminLogin'));
   setText('button[onclick="openCreateCompany()"]',tr('createCompany'));
   setText('button[onclick="logout()"]',tr('logout'));
   setText('button[onclick="backToKiosk()"]',tr('exit'));
 
-  // Admin tabs
   setText('button[onclick="showAdminTab(\'dashTab\',this)"]',tr('dashboard'));
   setText('button[onclick="showAdminTab(\'workersTab\',this)"]',tr('workers'));
   setText('button[onclick="showAdminTab(\'payrollTab\',this)"]',tr('payroll'));
   setText('button[onclick="showAdminTab(\'logsTab\',this)"]',tr('timeLogs'));
   setText('button[onclick="showAdminTab(\'settingsTab\',this)"]',tr('settings'));
 
-  // Worker buttons
   setText('button[onclick="checkGPS()"]',tr('checkGPS'));
   setText('#breakStartBtn',tr('startBreak'));
   setText('#breakEndBtn',tr('endBreak'));
   setText('button[onclick="downloadDailyPDF()"]',tr('dailyPayPDF'));
   setText('button[onclick="downloadWeeklyPDF()"]',tr('weeklyPayPDF'));
 
-  // Worker labels / notices
   const photoLabel=document.querySelector('label[for="clockPhoto"]');
   if(photoLabel)photoLabel.textContent=tr('takePhoto');
 
@@ -825,24 +748,19 @@ function applyLang(){
   const earnLabel=document.querySelector('#liveEarnings')?.parentElement;
   if(earnLabel)earnLabel.childNodes[0].nodeValue=tr('liveEarnings')+': ';
 
-  // Earnings cards
   const earnCards=document.querySelectorAll('.earnCard small');
   if(earnCards[0])earnCards[0].textContent=tr('today');
   if(earnCards[1])earnCards[1].textContent=tr('thisWeek');
 
-  // Section titles
   document.querySelectorAll('h3').forEach(h=>{
     const t=h.textContent.trim();
-    if(t==='My recent entries'||t==='Mis entradas recientes')h.textContent=tr('myRecentEntries');
-    if(t==='Company Branding'||t==='Marca de Empresa')h.textContent=tr('companyBranding');
-    if(t==='Worker Kiosk QR / Link Access'||t==='QR / Link para Trabajadores')h.textContent=tr('workerQR');
+    if(['My recent entries','Mis entradas recientes'].includes(t))h.textContent=tr('myRecentEntries');
+    if(['Company Branding','Marca de Empresa'].includes(t))h.textContent=tr('companyBranding');
+    if(['Worker Kiosk QR / Link Access','Worker Kiosk QR Access','QR / Link para Trabajadores'].includes(t))h.textContent=tr('workerQR');
   });
 
   setText('button[onclick="copyCompanyCode()"]',tr('copyCompanyCode'));
   setText('button[onclick="saveCompanyBranding()"]',tr('saveBranding'));
-
-  // Smart clock button/status refresh
-  if(typeof renderWorkerScreen==='function')renderWorkerScreen();
 }
 
 
@@ -1773,6 +1691,7 @@ function renderWorkerScreen(){
   document.getElementById('weekEarn').textContent=money(weekH*rate);
 
   updateLiveStats();
+  const photoNotice=document.getElementById('photoNotice'); if(photoNotice)photoNotice.textContent=tr('photoNotice');
 
   document.getElementById('myEntries').innerHTML=entries
     .filter(e=>e.workerId===selectedWorker.id)
