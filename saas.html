@@ -602,6 +602,11 @@ main{animation:screenEnter .35s ease}
     </div>
 
     <div class="row workerPdfRow">
+      <button id="dailyPdfBtn" class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
+      <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
+    </div>
+
+    <div class="row workerPdfRow">
       <button class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
       <button class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
     </div>
@@ -689,15 +694,146 @@ function screen(id){
 }
 window.screen=screen;
 
+function safeSetTextById(id,text){
+  const el=document.getElementById(id);
+  if(el) el.textContent=text;
+}
+function safeSetAll(selector,text){
+  document.querySelectorAll(selector).forEach(el=>el.textContent=text);
+}
+function tBee(key){
+  const dict={
+    en:{
+      lang:'Español',
+      workerKiosk:'👷 Worker Kiosk',
+      adminLogin:'🔐 Admin Login',
+      createCompany:'➕ Create Company',
+      exit:'Exit',
+      logout:'Logout',
+      checkGPS:'Check GPS',
+      startBreak:'Start Break',
+      endBreak:'End Break',
+      clockIn:'⏱ Clock In',
+      clockOut:'⏹ Clock Out',
+      out:'Out',
+      clockedIn:'Clocked In',
+      takePhoto:'📸 Take Required Clock Photo',
+      requiredOnly:'Required only for Clock In and Clock Out',
+      photoNotice:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.',
+      dailyPdf:'📄 Daily Pay PDF',
+      weeklyPdf:'📄 Weekly Pay PDF',
+      workTime:'⏱ Work Time',
+      liveEarnings:'💰 Live Earnings',
+      today:'Today',
+      thisWeek:'This Week',
+      dashboard:'Dashboard',
+      workers:'Workers',
+      payroll:'Payroll',
+      timeLogs:'Time Logs',
+      settings:'Settings'
+    },
+    es:{
+      lang:'English',
+      workerKiosk:'👷 Kiosko Trabajador',
+      adminLogin:'🔐 Admin',
+      createCompany:'➕ Crear Empresa',
+      exit:'Salir',
+      logout:'Cerrar Sesión',
+      checkGPS:'Revisar GPS',
+      startBreak:'Iniciar Descanso',
+      endBreak:'Terminar Descanso',
+      clockIn:'⏱ Entrada',
+      clockOut:'⏹ Salida',
+      out:'Fuera',
+      clockedIn:'En Turno',
+      takePhoto:'📸 Tomar Foto Requerida',
+      requiredOnly:'Requerida solo para Entrada y Salida',
+      photoNotice:'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.',
+      dailyPdf:'📄 PDF Diario',
+      weeklyPdf:'📄 PDF Semanal',
+      workTime:'⏱ Tiempo Trabajado',
+      liveEarnings:'💰 Ganancia en Vivo',
+      today:'Hoy',
+      thisWeek:'Esta Semana',
+      dashboard:'Panel',
+      workers:'Trabajadores',
+      payroll:'Nómina',
+      timeLogs:'Registros',
+      settings:'Ajustes'
+    }
+  };
+  return (dict[appLang]&&dict[appLang][key])||(dict.en&&dict.en[key])||key;
+}
+function applyBeeLang(){
+  const langBtn=document.getElementById('langToggleBtn');
+  if(langBtn) langBtn.textContent=tBee('lang');
+  document.documentElement.lang=appLang;
+
+  // Main home buttons
+  const homeBtns=document.querySelectorAll('.homeBtn');
+  if(homeBtns[0]) homeBtns[0].textContent=tBee('workerKiosk');
+  if(homeBtns[1]) homeBtns[1].textContent=tBee('adminLogin');
+  if(homeBtns[2]) homeBtns[2].textContent=tBee('createCompany');
+
+  // Header buttons
+  document.querySelectorAll('button').forEach(btn=>{
+    const txt=(btn.textContent||'').trim();
+    if(txt==='Logout'||txt==='Cerrar Sesión') btn.textContent=tBee('logout');
+    if(txt==='Exit'||txt==='Salir') btn.textContent=tBee('exit');
+    if(txt==='Check GPS'||txt==='Revisar GPS') btn.textContent=tBee('checkGPS');
+    if(txt==='Start Break'||txt==='Iniciar Descanso') btn.textContent=tBee('startBreak');
+    if(txt==='End Break'||txt==='Terminar Descanso') btn.textContent=tBee('endBreak');
+  });
+
+  // Known worker controls
+  safeSetTextById('breakStartBtn',tBee('startBreak'));
+  safeSetTextById('breakEndBtn',tBee('endBreak'));
+  safeSetTextById('dailyPdfBtn',tBee('dailyPdf'));
+  safeSetTextById('weeklyPdfBtn',tBee('weeklyPdf'));
+
+  const photoLabel=document.querySelector('label[for="clockPhoto"]');
+  if(photoLabel) photoLabel.textContent=tBee('takePhoto');
+  const photoHint=document.querySelector('#workerScreen .photoHint');
+  if(photoHint) photoHint.textContent=tBee('requiredOnly');
+  safeSetTextById('photoNotice',tBee('photoNotice'));
+
+  const workEl=document.getElementById('liveWorkTime');
+  if(workEl && workEl.parentElement) workEl.parentElement.childNodes[0].nodeValue=tBee('workTime')+': ';
+  const earnEl=document.getElementById('liveEarnings');
+  if(earnEl && earnEl.parentElement) earnEl.parentElement.childNodes[0].nodeValue=tBee('liveEarnings')+': ';
+
+  const earnCards=document.querySelectorAll('.earnCard small');
+  if(earnCards[0]) earnCards[0].textContent=tBee('today');
+  if(earnCards[1]) earnCards[1].textContent=tBee('thisWeek');
+
+  // Admin tabs by order
+  const tabs=document.querySelectorAll('.tabs .tab');
+  if(tabs[0]) tabs[0].textContent=tBee('dashboard');
+  if(tabs[1]) tabs[1].textContent=tBee('workers');
+  if(tabs[2]) tabs[2].textContent=tBee('payroll');
+  if(tabs[3]) tabs[3].textContent=tBee('timeLogs');
+  if(tabs[4]) tabs[4].textContent=tBee('settings');
+
+  // Smart clock button
+  const smart=document.getElementById('smartClockBtn');
+  const status=document.getElementById('workerStatus');
+  if(selectedWorker && smart){
+    const o=openEntry(selectedWorker.id);
+    smart.textContent=o?tBee('clockOut'):tBee('clockIn');
+    if(status) status.textContent=o?tBee('clockedIn'):tBee('out');
+  }
+}
+
+
 const T={
-  en:{photoNotice:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.',takePhoto:'📸 Take Required Clock Photo',requiredOnly:'Required only for Clock In and Clock Out',out:'Out',clockedIn:'Clocked In',workTime:'⏱ Work Time',liveEarnings:'💰 Live Earnings',dailyPayPDF:'📄 Daily Pay PDF',weeklyPayPDF:'📄 Weekly Pay PDF',checkGPS:'Check GPS',startBreak:'Start Break',endBreak:'End Break',exit:'Exit',myRecentEntries:'My recent entries',today:'Today',thisWeek:'This Week',workerKiosk:'👷 Worker Kiosk',adminLogin:'🔐 Admin Login',createCompany:'➕ Create Company',dashboard:'Dashboard',workers:'Workers',payroll:'Payroll',timeLogs:'Time Logs',settings:'Settings',logout:'Logout',companyBranding:'Company Branding',workerQR:'Worker Kiosk QR / Link Access',saveBranding:'Save Branding',copyCompanyCode:'Copy Company Code',clockIn:'⏱ Clock In',clockOut:'⏹ Clock Out',
+  en:{
     workerKiosk:'👷 Worker Kiosk',adminLogin:'🔐 Admin Login',createCompany:'➕ Create Company',
     continue:'Continue',back:'Back',login:'Login',dashboard:'Dashboard',workers:'Workers',payroll:'Payroll',timeLogs:'Time Logs',settings:'Settings',
     clockIn:'⏱ Clock In',clockOut:'⏹ Clock Out',startBreak:'Start Break',endBreak:'End Break',checkGPS:'Check GPS',
     downloadToday:'Download Today',downloadWeek:'Download Week',photoLabel:'📸 Take Required Clock Photo',
     photoHint:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.'
   },
-  es:{photoNotice:'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.',takePhoto:'📸 Tomar Foto Requerida',requiredOnly:'Requerida solo para Entrada y Salida',out:'Fuera',clockedIn:'En turno',workTime:'⏱ Tiempo Trabajado',liveEarnings:'💰 Ganancia en Vivo',dailyPayPDF:'📄 PDF Diario',weeklyPayPDF:'📄 PDF Semanal',checkGPS:'Revisar GPS',startBreak:'Iniciar Descanso',endBreak:'Terminar Descanso',exit:'Salir',myRecentEntries:'Mis entradas recientes',today:'Hoy',thisWeek:'Esta Semana',workerKiosk:'👷 Kiosko Trabajador',adminLogin:'🔐 Admin',createCompany:'➕ Crear Empresa',dashboard:'Panel',workers:'Trabajadores',payroll:'Nómina',timeLogs:'Registros',settings:'Ajustes',logout:'Cerrar Sesión',companyBranding:'Marca de Empresa',workerQR:'QR / Link para Trabajadores',saveBranding:'Guardar Marca',copyCompanyCode:'Copiar Código de Empresa',clockIn:'⏱ Entrada',clockOut:'⏹ Salida',
+  es:{
     workerKiosk:'👷 Kiosko Trabajador',adminLogin:'🔐 Admin',createCompany:'➕ Crear Empresa',
     continue:'Continuar',back:'Atrás',login:'Entrar',dashboard:'Panel',workers:'Trabajadores',payroll:'Nómina',timeLogs:'Registros',settings:'Ajustes',
     clockIn:'⏱ Entrada',clockOut:'⏹ Salida',startBreak:'Iniciar Descanso',endBreak:'Terminar Descanso',checkGPS:'Revisar GPS',
@@ -706,63 +842,32 @@ const T={
   }
 };
 function tr(k){return (T[appLang]&&T[appLang][k])||T.en[k]||k}
-
-function setText(selector,text){
-  document.querySelectorAll(selector).forEach(e=>e.textContent=text);
-}
+function setText(selector,text){document.querySelectorAll(selector).forEach(e=>e.textContent=text)}
+window.toggleAppLang=()=>{
+  appLang=appLang==='en'?'es':'en';
+  localStorage.setItem('beeshift_lang',appLang);
+  applyBeeLang();
+  if(typeof renderAll==='function')renderAll();
+};
 function applyLang(){
   const b=document.getElementById('langToggleBtn');
   if(b)b.textContent=appLang==='en'?'Español':'English';
   document.documentElement.lang=appLang;
-
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.dataset[appLang]||el.dataset.en});
   setText('button[onclick="openWorkerKioskStart()"]',tr('workerKiosk'));
   setText('button[onclick="openAdminLogin()"]',tr('adminLogin'));
   setText('button[onclick="openCreateCompany()"]',tr('createCompany'));
-  setText('button[onclick="logout()"]',tr('logout'));
-  setText('button[onclick="backToKiosk()"]',tr('exit'));
-
-  setText('button[onclick="showAdminTab(\'dashTab\',this)"]',tr('dashboard'));
-  setText('button[onclick="showAdminTab(\'workersTab\',this)"]',tr('workers'));
-  setText('button[onclick="showAdminTab(\'payrollTab\',this)"]',tr('payroll'));
-  setText('button[onclick="showAdminTab(\'logsTab\',this)"]',tr('timeLogs'));
-  setText('button[onclick="showAdminTab(\'settingsTab\',this)"]',tr('settings'));
-
+  setText('button[onclick="loadKioskCompany()"]',tr('continue'));
+  setText('button[onclick="login()"]',tr('login'));
+  setText('button[onclick="signup()"]',tr('createCompany'));
   setText('button[onclick="checkGPS()"]',tr('checkGPS'));
   setText('#breakStartBtn',tr('startBreak'));
   setText('#breakEndBtn',tr('endBreak'));
-  setText('button[onclick="downloadDailyPDF()"]',tr('dailyPayPDF'));
-  setText('button[onclick="downloadWeeklyPDF()"]',tr('weeklyPayPDF'));
-
-  const photoLabel=document.querySelector('label[for="clockPhoto"]');
-  if(photoLabel)photoLabel.textContent=tr('takePhoto');
-
-  const photoHint=document.querySelector('#workerScreen .photoHint');
-  if(photoHint)photoHint.textContent=tr('requiredOnly');
-
-  const photoNotice=document.getElementById('photoNotice');
-  if(photoNotice)photoNotice.textContent=tr('photoNotice');
-
-  const workLabel=document.querySelector('#liveWorkTime')?.parentElement;
-  if(workLabel)workLabel.childNodes[0].nodeValue=tr('workTime')+': ';
-
-  const earnLabel=document.querySelector('#liveEarnings')?.parentElement;
-  if(earnLabel)earnLabel.childNodes[0].nodeValue=tr('liveEarnings')+': ';
-
-  const earnCards=document.querySelectorAll('.earnCard small');
-  if(earnCards[0])earnCards[0].textContent=tr('today');
-  if(earnCards[1])earnCards[1].textContent=tr('thisWeek');
-
-  document.querySelectorAll('h3').forEach(h=>{
-    const t=h.textContent.trim();
-    if(['My recent entries','Mis entradas recientes'].includes(t))h.textContent=tr('myRecentEntries');
-    if(['Company Branding','Marca de Empresa'].includes(t))h.textContent=tr('companyBranding');
-    if(['Worker Kiosk QR / Link Access','Worker Kiosk QR Access','QR / Link para Trabajadores'].includes(t))h.textContent=tr('workerQR');
-  });
-
-  setText('button[onclick="copyCompanyCode()"]',tr('copyCompanyCode'));
-  setText('button[onclick="saveCompanyBranding()"]',tr('saveBranding'));
+  setText("button[onclick=\"downloadWorkerCSV(\'today\')\"]",tr("downloadToday"));
+  setText("button[onclick=\"downloadWorkerCSV(\'week\')\"]",tr("downloadWeek"));
+  const photoLabel=document.querySelector('label[for="clockPhoto"]'); if(photoLabel) photoLabel.textContent=tr('photoLabel');
+  const workerHint=document.querySelector('#workerScreen .photoHint'); if(workerHint) workerHint.textContent=tr('photoHint');
 }
-
 
 
 function msg(id,t,c='error'){
@@ -787,6 +892,7 @@ window.openAdminLogin=()=>screen('login');
 window.openCreateCompany=()=>screen('signup');
 
 async function init(){
+  applyBeeLang();
   applyLang();
   try{
     const A=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
@@ -1664,11 +1770,11 @@ function renderWorkerScreen(){
   const o=openEntry(selectedWorker.id);
   const isIn=!!o;
 
-  document.getElementById('workerStatus').textContent=isIn?tr('clockedIn'):tr('out');
+  document.getElementById('workerStatus').textContent=isIn?tBee('clockedIn'):tBee('out');
 
   const btn=document.getElementById('smartClockBtn');
   if(btn){
-    btn.textContent=isIn?tr('clockOut'):tr('clockIn');
+    btn.textContent=isIn?tBee('clockOut'):tBee('clockIn');
     btn.className=isIn?'bigClockBtn danger':'bigClockBtn';
     btn.disabled=clockBusy;
   }
@@ -1691,7 +1797,6 @@ function renderWorkerScreen(){
   document.getElementById('weekEarn').textContent=money(weekH*rate);
 
   updateLiveStats();
-  const photoNotice=document.getElementById('photoNotice'); if(photoNotice)photoNotice.textContent=tr('photoNotice');
 
   document.getElementById('myEntries').innerHTML=entries
     .filter(e=>e.workerId===selectedWorker.id)
