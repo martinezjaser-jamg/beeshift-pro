@@ -885,46 +885,66 @@ function renderAll(){
   renderWorkerScreen();
 }
 
+
+function getLocalDateKey(date){
+  const d=new Date(date);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0');
+}
+function sameLocalDay(a,b){
+  return getLocalDateKey(a)===getLocalDateKey(b);
+}
+function entryHoursLive(e){
+  if(!e||!e.inTime)return 0;
+
+  const start=new Date(e.inTime);
+  let end=e.outTime?new Date(e.outTime):new Date();
+
+  // overnight protection
+  if(end<start)end.setDate(end.getDate()+1);
+
+  let breakMs=(e.breakMins||0)*60000;
+  if(!e.outTime&&e.breakStart){
+    breakMs+=new Date()-new Date(e.breakStart);
+  }
+
+  return Math.max(0,(end-start-breakMs)/3600000);
+}
+function isTodayEntry(e){
+  return e&&e.inTime&&sameLocalDay(e.inTime,new Date());
+}
+function workerRateForEntry(e){
+  const w=workers.find(x=>x.id===e.workerId);
+  return Number(w?.rate||0);
+}
+
 function renderDash(){
-  const el=document.getElementById('dash');if(!el)return;
+  const el=document.getElementById('dash');
+  if(!el)return;
 
   const active=entries.filter(e=>e.status==='active'&&!e.outTime).length;
-  const today=entries.filter(isToday);
-  const todayH=today.reduce((s,e)=>s+hours(e),0);
-  const todayGross=today.reduce((s,e)=>{
-    const w=workers.find(x=>x.id===e.workerId);
-    return s+hours(e)*Number(w?.rate||0);
-  },0);
+
+  // Today totals include completed logs AND active running clock-ins, using local date
+  const todayEntries=entries.filter(isTodayEntry);
+  const todayHours=todayEntries.reduce((s,e)=>s+entryHoursLive(e),0);
+  const todayGross=todayEntries.reduce((s,e)=>s+(entryHoursLive(e)*workerRateForEntry(e)),0);
 
   el.innerHTML=`
     <div class="stat"><small>Workers</small><b>${workers.length}/${companySettings.workerLimit||10}</b></div>
     <div class="stat"><small>Active Now</small><b>${active}</b></div>
-    <div class="stat"><small>Today Hours</small><b>${todayH.toFixed(2)}</b></div>
+    <div class="stat"><small>Today Hours</small><b>${todayHours.toFixed(2)}</b></div>
     <div class="stat"><small>Today Gross</small><b>${money(todayGross)}</b></div>
   `;
 
-  document.getElementById('planBadge').textContent=`Plan: ${(companySettings.plan||'basic').toUpperCase()}`;
-  document.getElementById('companyStatusBadge').textContent=`Status: ${(companySettings.status||'active').toUpperCase()}`;
+  const plan=document.getElementById('planBadge');
+  if(plan)plan.textContent=`Plan: ${(companySettings.plan||'basic').toUpperCase()}`;
+
+  const st=document.getElementById('companyStatusBadge');
+  if(st)st.textContent=`Status: ${(companySettings.status||'active').toUpperCase()}`;
 }
 
-
-function workerProfileHTML(w,mini=false){
-  if(w.profilePhoto){
-    return `<img class="${mini?'profileMini':'profilePhoto'}" src="${w.profilePhoto}" alt="${w.name}">`;
-  }
-  return mini ? `<span class="profileMini" style="display:inline-flex;align-items:center;justify-content:center;background:#111;color:var(--muted)">👤</span>` : `<div class="profilePlaceholder">👤</div>`;
-}
-function profilePhotoButton(workerId){
-  const w=workers.find(x=>x.id===workerId);
-  if(!w||!w.profilePhoto)return '';
-  return `<button onclick="openProfilePhoto('${workerId}')">Profile</button>`;
-}
-window.openProfilePhoto=(workerId)=>{
-  const w=workers.find(x=>x.id===workerId);
-  if(!w||!w.profilePhoto)return alert('No profile photo saved.');
-  document.getElementById('photoModalTitle').textContent='Profile Photo - '+w.name;
-  document.getElementById('photoModalImg').src=w.profilePhoto;
-  document.getElementById('photoModal').classList.add('open');
+function refreshLiveAdminDash(){
+  const admin=document.getElementById('admin');
+  if(admin&&!admin.classList.contains('hidden'))renderDash();
 }
 
 function renderWorkers(){
@@ -1306,12 +1326,20 @@ window.backToKiosk=()=>{
 
 function workerEntries(range){
   if(!selectedWorker)return[];
-  return entries
-    .filter(e=>e.workerId===selectedWorker.id)
-    .filter(e=>range==='today'?isToday(e):range==='week'?isThisWeek(e):true);
+  const now=new Date();
+  const start=weekStart();
+
+  return entries.filter(e=>{
+    if(e.workerId!==selectedWorker.id)return false;
+
+    const d=new Date(e.inTime);
+
+    if(range==='today')return sameLocalDay(d,now);
+    if(range==='week')return d>=start;
+
+    return true;
+  });
 }
-
-
 function formatDurationMs(ms){
   let total=Math.max(0,Math.floor(ms/1000));
   let h=Math.floor(total/3600);
@@ -1392,7 +1420,7 @@ function pdfWeekStart(){
   return d;
 }
 function pdfEntryHours(e){
-  if(typeof activeWorkedMs==='function' && !e.outTime) return activeWorkedMs(e)/3600000;
+  if(typeof entryHoursLive==='function') return entryHoursLive(e);
   if(typeof hours==='function') return hours(e);
   if(!e||!e.inTime)return 0;
   const start=new Date(e.inTime);
@@ -1450,42 +1478,56 @@ function renderWorkerScreen(){
 
   const o=openEntry(selectedWorker.id);
   const isIn=!!o;
-  const rate=Number(selectedWorker.rate||0);
-
-  const td=workerEntries('today');
-  const wk=workerEntries('week');
-
-  const th=td.reduce((s,e)=>s+hours(e),0);
-  const wh=wk.reduce((s,e)=>s+hours(e),0);
-
-  document.getElementById('todayHours').textContent=th.toFixed(2)+'h';
-  document.getElementById('weekHours').textContent=wh.toFixed(2)+'h';
-  document.getElementById('todayEarn').textContent=money(th*rate);
-  document.getElementById('weekEarn').textContent=money(wh*rate);
 
   document.getElementById('workerStatus').textContent=isIn?'Clocked In':'Out';
 
   const btn=document.getElementById('smartClockBtn');
-  btn.disabled=clockBusy;
-  btn.textContent=isIn?tr('clockOut'):tr('clockIn');
-  btn.className='bigClockBtn '+(isIn?'danger':'');
+  if(btn){
+    btn.textContent=isIn?'⏹ Clock Out':'⏱ Clock In';
+    btn.className=isIn?'bigClockBtn danger':'bigClockBtn';
+    btn.disabled=clockBusy;
+  }
 
   document.getElementById('breakStartBtn').disabled=!isIn||!!(o&&o.breakStart)||clockBusy;
   document.getElementById('breakEndBtn').disabled=!(o&&o.breakStart)||clockBusy;
 
-  document.getElementById('myEntries').innerHTML=entries
-    .filter(e=>e.workerId===selectedWorker.id)
-    .slice(0,8)
-    .map(e=>`
-      <div class="table-row">
-        <span>${fmtDate(e.inTime)}</span>
-        <span>${fmtTime(e.inTime)}</span>
-        <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
-        <span>${e.breakMins||0}m</span>
-        <span>${hours(e).toFixed(2)}h</span>
-        <span>${money(hours(e)*rate)}</span>
-      </div>
-    `).join('')||'<p class="muted">No entries yet</p>';
+  const todays=workerEntries('today');
+  const weeks=workerEntries('week');
+
+  const todayH=todays.reduce((s,e)=>s+entryHoursLive(e),0);
+  const weekH=weeks.reduce((s,e)=>s+entryHoursLive(e),0);
+
+  const rate=Number(selectedWorker.rate||0);
+
+  const todayHoursEl=document.getElementById('todayHours');
+  const weekHoursEl=document.getElementById('weekHours');
+  const todayEarnEl=document.getElementById('todayEarn');
+  const weekEarnEl=document.getElementById('weekEarn');
+
+  if(todayHoursEl)todayHoursEl.textContent=todayH.toFixed(2)+'h';
+  if(weekHoursEl)weekHoursEl.textContent=weekH.toFixed(2)+'h';
+  if(todayEarnEl)todayEarnEl.textContent=money(todayH*rate);
+  if(weekEarnEl)weekEarnEl.textContent=money(weekH*rate);
+
+  updateLiveStats();
+  refreshLiveAdminDash();
+
+  const myEntries=document.getElementById('myEntries');
+  if(myEntries){
+    myEntries.innerHTML=entries
+      .filter(e=>e.workerId===selectedWorker.id)
+      .slice(0,8)
+      .map(e=>`
+        <div class="table-row">
+          <span>${fmtDate(e.inTime)}</span>
+          <span>${fmtTime(e.inTime)}</span>
+          <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
+          <span>${e.breakMins||0}m</span>
+          <span>${entryHoursLive(e).toFixed(2)}h</span>
+          <span></span>
+        </div>
+      `).join('')||'<p class="muted">No entries yet</p>';
+  }
 }
 
 window.smartClockAction=()=>openEntry(selectedWorker.id)?clockOut():clockIn();
