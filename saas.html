@@ -341,6 +341,13 @@ main{animation:screenEnter .35s ease}
 .liveStatsCard{background:#171200;border:1px solid var(--border);border-radius:18px;padding:14px;margin-top:10px}
 .liveStatsCard p{margin:8px 0}
 .pdfBtn{background:#fff3b0!important;color:#1a1400!important}
+
+.workerPdfRow{margin-top:12px}
+.workerPdfRow .pdfBtn{min-width:210px}
+@media(max-width:760px){
+  .workerPdfRow{display:grid!important;grid-template-columns:1fr;gap:10px}
+  .workerPdfRow .pdfBtn{width:100%;max-width:360px;margin:0 auto}
+}
 </style>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
@@ -574,10 +581,6 @@ main{animation:screenEnter .35s ease}
       <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
       <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
       <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
-      <div class="row">
-        <button class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
-        <button class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
-      </div>
     </div>
 
     <p>Status: <b id="workerStatus">Out</b></p>
@@ -598,12 +601,12 @@ main{animation:screenEnter .35s ease}
       <button id="breakEndBtn" class="green" onclick="endBreak()">End Break</button>
     </div>
 
-    <div class="row">
-      <button class="smallLink" onclick="downloadWorkerCSV('today')">Download Today</button>
-      <button class="smallLink" onclick="downloadWorkerCSV('week')">Download Week</button>
+    <div class="row workerPdfRow">
+      <button class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
+      <button class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
     </div>
 
-    <p class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
+    <p class="muted" id="photoNotice">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
   </div>
 
   <div class="card"><h3>My recent entries</h3><div id="myEntries"></div></div>
@@ -688,6 +691,37 @@ window.screen=screen;
 
 const T={
   en:{
+    photoNotice:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.',
+    takePhoto:'📸 Take Required Clock Photo',
+    requiredOnly:'Required only for Clock In and Clock Out',
+    status:'Status',
+    out:'Out',
+    clockedIn:'Clocked In',
+    workTime:'⏱ Work Time',
+    liveEarnings:'💰 Live Earnings',
+    dailyPayPDF:'📄 Daily Pay PDF',
+    weeklyPayPDF:'📄 Weekly Pay PDF',
+    checkGPS:'Check GPS',
+    startBreak:'Start Break',
+    endBreak:'End Break',
+    exit:'Exit',
+    myRecentEntries:'My recent entries',
+    today:'Today',
+    thisWeek:'This Week',
+    workerKiosk:'👷 Worker Kiosk',
+    adminLogin:'🔐 Admin Login',
+    createCompany:'➕ Create Company',
+    dashboard:'Dashboard',
+    workers:'Workers',
+    payroll:'Payroll',
+    timeLogs:'Time Logs',
+    settings:'Settings',
+    logout:'Logout',
+    companyBranding:'Company Branding',
+    workerQR:'Worker Kiosk QR / Link Access',
+    saveBranding:'Save Branding',
+    copyCompanyCode:'Copy Company Code',
+    
     workerKiosk:'👷 Worker Kiosk',adminLogin:'🔐 Admin Login',createCompany:'➕ Create Company',
     continue:'Continue',back:'Back',login:'Login',dashboard:'Dashboard',workers:'Workers',payroll:'Payroll',timeLogs:'Time Logs',settings:'Settings',
     clockIn:'⏱ Clock In',clockOut:'⏹ Clock Out',startBreak:'Start Break',endBreak:'End Break',checkGPS:'Check GPS',
@@ -695,6 +729,37 @@ const T={
     photoHint:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.'
   },
   es:{
+    photoNotice:'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.',
+    takePhoto:'📸 Tomar Foto Requerida',
+    requiredOnly:'Requerida solo para Entrada y Salida',
+    status:'Estado',
+    out:'Fuera',
+    clockedIn:'En turno',
+    workTime:'⏱ Tiempo Trabajado',
+    liveEarnings:'💰 Ganancia en Vivo',
+    dailyPayPDF:'📄 PDF Diario',
+    weeklyPayPDF:'📄 PDF Semanal',
+    checkGPS:'Revisar GPS',
+    startBreak:'Iniciar Descanso',
+    endBreak:'Terminar Descanso',
+    exit:'Salir',
+    myRecentEntries:'Mis entradas recientes',
+    today:'Hoy',
+    thisWeek:'Esta Semana',
+    workerKiosk:'👷 Kiosko Trabajador',
+    adminLogin:'🔐 Admin',
+    createCompany:'➕ Crear Empresa',
+    dashboard:'Panel',
+    workers:'Trabajadores',
+    payroll:'Nómina',
+    timeLogs:'Registros',
+    settings:'Ajustes',
+    logout:'Cerrar Sesión',
+    companyBranding:'Marca de Empresa',
+    workerQR:'QR / Link para Trabajadores',
+    saveBranding:'Guardar Marca',
+    copyCompanyCode:'Copiar Código de Empresa',
+    
     workerKiosk:'👷 Kiosko Trabajador',adminLogin:'🔐 Admin',createCompany:'➕ Crear Empresa',
     continue:'Continuar',back:'Atrás',login:'Entrar',dashboard:'Panel',workers:'Trabajadores',payroll:'Nómina',timeLogs:'Registros',settings:'Ajustes',
     clockIn:'⏱ Entrada',clockOut:'⏹ Salida',startBreak:'Iniciar Descanso',endBreak:'Terminar Descanso',checkGPS:'Revisar GPS',
@@ -710,25 +775,76 @@ window.toggleAppLang=()=>{
   applyLang();
   renderAll();
 }
+
+function setText(selector,text){
+  document.querySelectorAll(selector).forEach(e=>e.textContent=text);
+}
+function setPlaceholder(id,text){
+  const e=document.getElementById(id);
+  if(e)e.placeholder=text;
+}
 function applyLang(){
   const b=document.getElementById('langToggleBtn');
   if(b)b.textContent=appLang==='en'?'Español':'English';
   document.documentElement.lang=appLang;
-  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.dataset[appLang]||el.dataset.en});
+
+  // Home / main navigation
   setText('button[onclick="openWorkerKioskStart()"]',tr('workerKiosk'));
   setText('button[onclick="openAdminLogin()"]',tr('adminLogin'));
   setText('button[onclick="openCreateCompany()"]',tr('createCompany'));
-  setText('button[onclick="loadKioskCompany()"]',tr('continue'));
-  setText('button[onclick="login()"]',tr('login'));
-  setText('button[onclick="signup()"]',tr('createCompany'));
+  setText('button[onclick="logout()"]',tr('logout'));
+  setText('button[onclick="backToKiosk()"]',tr('exit'));
+
+  // Admin tabs
+  setText('button[onclick="showAdminTab(\'dashTab\',this)"]',tr('dashboard'));
+  setText('button[onclick="showAdminTab(\'workersTab\',this)"]',tr('workers'));
+  setText('button[onclick="showAdminTab(\'payrollTab\',this)"]',tr('payroll'));
+  setText('button[onclick="showAdminTab(\'logsTab\',this)"]',tr('timeLogs'));
+  setText('button[onclick="showAdminTab(\'settingsTab\',this)"]',tr('settings'));
+
+  // Worker buttons
   setText('button[onclick="checkGPS()"]',tr('checkGPS'));
   setText('#breakStartBtn',tr('startBreak'));
   setText('#breakEndBtn',tr('endBreak'));
-  setText("button[onclick=\"downloadWorkerCSV(\'today\')\"]",tr("downloadToday"));
-  setText("button[onclick=\"downloadWorkerCSV(\'week\')\"]",tr("downloadWeek"));
-  const photoLabel=document.querySelector('label[for="clockPhoto"]'); if(photoLabel) photoLabel.textContent=tr('photoLabel');
-  const workerHint=document.querySelector('#workerScreen .photoHint'); if(workerHint) workerHint.textContent=tr('photoHint');
+  setText('button[onclick="downloadDailyPDF()"]',tr('dailyPayPDF'));
+  setText('button[onclick="downloadWeeklyPDF()"]',tr('weeklyPayPDF'));
+
+  // Worker labels / notices
+  const photoLabel=document.querySelector('label[for="clockPhoto"]');
+  if(photoLabel)photoLabel.textContent=tr('takePhoto');
+
+  const photoHint=document.querySelector('#workerScreen .photoHint');
+  if(photoHint)photoHint.textContent=tr('requiredOnly');
+
+  const photoNotice=document.getElementById('photoNotice');
+  if(photoNotice)photoNotice.textContent=tr('photoNotice');
+
+  const workLabel=document.querySelector('#liveWorkTime')?.parentElement;
+  if(workLabel)workLabel.childNodes[0].nodeValue=tr('workTime')+': ';
+
+  const earnLabel=document.querySelector('#liveEarnings')?.parentElement;
+  if(earnLabel)earnLabel.childNodes[0].nodeValue=tr('liveEarnings')+': ';
+
+  // Earnings cards
+  const earnCards=document.querySelectorAll('.earnCard small');
+  if(earnCards[0])earnCards[0].textContent=tr('today');
+  if(earnCards[1])earnCards[1].textContent=tr('thisWeek');
+
+  // Section titles
+  document.querySelectorAll('h3').forEach(h=>{
+    const t=h.textContent.trim();
+    if(t==='My recent entries'||t==='Mis entradas recientes')h.textContent=tr('myRecentEntries');
+    if(t==='Company Branding'||t==='Marca de Empresa')h.textContent=tr('companyBranding');
+    if(t==='Worker Kiosk QR / Link Access'||t==='QR / Link para Trabajadores')h.textContent=tr('workerQR');
+  });
+
+  setText('button[onclick="copyCompanyCode()"]',tr('copyCompanyCode'));
+  setText('button[onclick="saveCompanyBranding()"]',tr('saveBranding'));
+
+  // Smart clock button/status refresh
+  if(typeof renderWorkerScreen==='function')renderWorkerScreen();
 }
+
 
 
 function msg(id,t,c='error'){
@@ -1013,46 +1129,94 @@ function renderAll(){
   renderWorkerScreen();
 }
 
+
+function localDateKey(d){
+  const x=new Date(d);
+  const y=x.getFullYear();
+  const m=String(x.getMonth()+1).padStart(2,'0');
+  const day=String(x.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function entryHoursLive(e){
+  if(!e||!e.inTime)return 0;
+  let start=new Date(e.inTime);
+  let end=e.outTime?new Date(e.outTime):new Date();
+  if(end < start) end.setDate(end.getDate()+1);
+  let breakMs=(e.breakMins||0)*60000;
+  if(!e.outTime && e.breakStart){
+    breakMs += new Date() - new Date(e.breakStart);
+  }
+  let diff=end-start-breakMs;
+  return Math.max(0,diff/3600000);
+}
+function isTodayEntry(e){
+  return e && e.inTime && localDateKey(e.inTime)===localDateKey(new Date());
+}
+function workerRateForEntry(e){
+  const w=workers.find(x=>x.id===e.workerId);
+  return Number(w?.rate||0);
+}
+
+
+function getLocalDateKey(date){
+  const d=new Date(date);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0');
+}
+function sameLocalDay(a,b){
+  return getLocalDateKey(a)===getLocalDateKey(b);
+}
+function entryHoursLive(e){
+  if(!e||!e.inTime)return 0;
+  const start=new Date(e.inTime);
+  let end=e.outTime?new Date(e.outTime):new Date();
+
+  // Overnight protection
+  if(end < start) end.setDate(end.getDate()+1);
+
+  let breakMs=(e.breakMins||0)*60000;
+  if(!e.outTime && e.breakStart){
+    breakMs += new Date()-new Date(e.breakStart);
+  }
+
+  const diff=end-start-breakMs;
+  return Math.max(0,diff/3600000);
+}
+function isTodayEntry(e){
+  return e&&e.inTime&&sameLocalDay(e.inTime,new Date());
+}
+function workerRateForEntry(e){
+  const w=workers.find(x=>x.id===e.workerId);
+  return Number(w?.rate||0);
+}
+
 function renderDash(){
-  const el=document.getElementById('dash');if(!el)return;
+  const el=document.getElementById('dash');
+  if(!el)return;
 
   const active=entries.filter(e=>e.status==='active'&&!e.outTime).length;
-  const today=entries.filter(isToday);
-  const todayH=today.reduce((s,e)=>s+hours(e),0);
-  const todayGross=today.reduce((s,e)=>{
-    const w=workers.find(x=>x.id===e.workerId);
-    return s+hours(e)*Number(w?.rate||0);
-  },0);
+
+  // Today totals include completed logs AND active running clock-ins, using LOCAL date
+  const todayEntries=entries.filter(isTodayEntry);
+  const todayHours=todayEntries.reduce((s,e)=>s+entryHoursLive(e),0);
+  const todayGross=todayEntries.reduce((s,e)=>s+(entryHoursLive(e)*workerRateForEntry(e)),0);
 
   el.innerHTML=`
     <div class="stat"><small>Workers</small><b>${workers.length}/${companySettings.workerLimit||10}</b></div>
     <div class="stat"><small>Active Now</small><b>${active}</b></div>
-    <div class="stat"><small>Today Hours</small><b>${todayH.toFixed(2)}</b></div>
+    <div class="stat"><small>Today Hours</small><b>${todayHours.toFixed(2)}</b></div>
     <div class="stat"><small>Today Gross</small><b>${money(todayGross)}</b></div>
   `;
 
-  document.getElementById('planBadge').textContent=`Plan: ${(companySettings.plan||'basic').toUpperCase()}`;
-  document.getElementById('companyStatusBadge').textContent=`Status: ${(companySettings.status||'active').toUpperCase()}`;
+  const plan=document.getElementById('planBadge');
+  if(plan)plan.textContent=`Plan: ${(companySettings.plan||'basic').toUpperCase()}`;
+
+  const st=document.getElementById('companyStatusBadge');
+  if(st)st.textContent=`Status: ${(companySettings.status||'active').toUpperCase()}`;
 }
 
-
-function workerProfileHTML(w,mini=false){
-  if(w.profilePhoto){
-    return `<img class="${mini?'profileMini':'profilePhoto'}" src="${w.profilePhoto}" alt="${w.name}">`;
-  }
-  return mini ? `<span class="profileMini" style="display:inline-flex;align-items:center;justify-content:center;background:#111;color:var(--muted)">👤</span>` : `<div class="profilePlaceholder">👤</div>`;
-}
-function profilePhotoButton(workerId){
-  const w=workers.find(x=>x.id===workerId);
-  if(!w||!w.profilePhoto)return '';
-  return `<button onclick="openProfilePhoto('${workerId}')">Profile</button>`;
-}
-window.openProfilePhoto=(workerId)=>{
-  const w=workers.find(x=>x.id===workerId);
-  if(!w||!w.profilePhoto)return alert('No profile photo saved.');
-  document.getElementById('photoModalTitle').textContent='Profile Photo - '+w.name;
-  document.getElementById('photoModalImg').src=w.profilePhoto;
-  document.getElementById('photoModal').classList.add('open');
+function refreshLiveAdminDash(){
+  const admin=document.getElementById('admin');
+  if(admin && !admin.classList.contains('hidden'))renderDash();
 }
 
 function renderWorkers(){
@@ -1456,12 +1620,25 @@ window.backToKiosk=()=>{
 
 function workerEntries(range){
   if(!selectedWorker)return[];
-  return entries
-    .filter(e=>e.workerId===selectedWorker.id)
-    .filter(e=>range==='today'?isToday(e):range==='week'?isThisWeek(e):true);
+  const now=new Date();
+  const start=weekStart();
+
+  return entries.filter(e=>{
+    if(e.workerId!==selectedWorker.id)return false;
+
+    const d=new Date(e.inTime);
+
+    if(range==='today'){
+      return sameLocalDay(d,now);
+    }
+
+    if(range==='week'){
+      return d>=start;
+    }
+
+    return true;
+  });
 }
-
-
 function formatDurationMs(ms){
   let total=Math.max(0,Math.floor(ms/1000));
   let h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
@@ -1507,13 +1684,22 @@ function updateLiveStats(){
 }
 function entriesForWorkerRange(range){
   if(!selectedWorker)return[];
-  const todayStr=fmtDate(new Date());
+  const now=new Date();
   const start=weekStart();
+
   return entries.filter(e=>{
     if(e.workerId!==selectedWorker.id)return false;
+
     const d=new Date(e.inTime);
-    if(range==='today')return fmtDate(e.inTime)===todayStr;
-    if(range==='week')return d>=start;
+
+    if(range==='today'){
+      return sameLocalDay(d,now);
+    }
+
+    if(range==='week'){
+      return d>=start;
+    }
+
     return true;
   });
 }
@@ -1531,7 +1717,7 @@ function premiumPayPDF(range){
   const period=range==='today'?fmtDate(new Date()):`${fmtDate(weekStart())} to ${fmtDate(new Date())}`;
   let totalHours=0,totalBreak=0,totalPay=0;
   const rowHtml=rows.map(e=>{
-    const h=hours(e),pay=h*rate;
+    const h=entryHoursLive(e),pay=h*rate;
     totalHours+=h;totalBreak+=Number(e.breakMins||0);totalPay+=pay;
     return `<tr><td>${escapeHtml(fmtDate(e.inTime))}</td><td>${escapeHtml(fmtTime(e.inTime))}</td><td>${e.outTime?escapeHtml(fmtTime(e.outTime)):'Active'}</td><td>${Number(e.breakMins||0)}m</td><td>${h.toFixed(2)}</td><td>${money(rate)}</td><td>${money(pay)}</td></tr>`;
   }).join('');
@@ -1539,7 +1725,14 @@ function premiumPayPDF(range){
   const generated=new Date().toLocaleString();
   const html=`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
   *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:28px;color:#1a1400;background:#fff}.invoice{max-width:860px;margin:0 auto;border:1px solid #e5d28a;border-radius:18px;overflow:hidden}.header{background:linear-gradient(135deg,#1a1400,#3a2d00);color:#fff8e0;padding:26px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;align-items:center;gap:14px}.brand img{width:72px;height:72px;border-radius:18px;object-fit:contain;background:#f5c400;padding:5px}.brand h1{margin:0;color:#f5c400;font-size:26px}.brand p{margin:3px 0;color:#fff8e0}.badge{border:1px solid #f5c400;border-radius:999px;padding:8px 12px;color:#f5c400;font-weight:bold;text-align:center}.section{padding:22px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.box{border:1px solid #ecd77b;border-radius:14px;padding:14px;background:#fffaf0}.box small{display:block;color:#7a6400;text-transform:uppercase;font-size:11px;letter-spacing:.06em}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f5c400;color:#1a1400;padding:10px;font-size:12px;text-align:left}td{border-bottom:1px solid #eee;padding:10px;font-size:13px}.totals{display:flex;justify-content:flex-end;margin-top:18px}.totalBox{min-width:280px;border:2px solid #f5c400;border-radius:16px;padding:16px;background:#fff8d6}.totalLine{display:flex;justify-content:space-between;margin:8px 0}.grand{font-size:22px;font-weight:900;color:#1a1400;border-top:1px solid #d1b000;padding-top:10px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:42px}.sig{border-top:1px solid #1a1400;padding-top:8px;text-align:center;color:#5b4b00}.footer{text-align:center;color:#7a6400;font-size:12px;margin-top:22px}@media print{body{padding:0}.invoice{border-radius:0;border:0}}
-  </style></head><body><div class="invoice"><div class="header"><div class="brand"><img src="${logo}"><div><h1>${escapeHtml(companyName)}</h1><p>BeeShift Payroll Statement</p><p>Company Code: ${escapeHtml(companyCode)}</p></div></div><div class="badge">${escapeHtml(title)}</div></div><div class="section"><div class="meta"><div class="box"><small>Worker</small><b>${escapeHtml(workerName)}</b></div><div class="box"><small>Period</small><b>${escapeHtml(period)}</b></div><div class="box"><small>Hourly Rate</small><b>${money(rate)}</b></div><div class="box"><small>Generated</small><b>${escapeHtml(generated)}</b></div></div><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Break</th><th>Hours</th><th>Rate</th><th>Earnings</th></tr></thead><tbody>${rowHtml||'<tr><td colspan="7" style="text-align:center">No completed entries for this period.</td></tr>'}</tbody></table><div class="totals"><div class="totalBox"><div class="totalLine"><span>Total Hours</span><b>${totalHours.toFixed(2)}</b></div><div class="totalLine"><span>Total Break</span><b>${totalBreak}m</b></div><div class="totalLine grand"><span>Total Earnings</span><span>${money(totalPay)}</span></div></div></div><div class="signatures"><div class="sig">Worker Signature</div><div class="sig">Manager Approval</div></div><div class="footer">This statement is generated by BeeShift. Please review with your manager if corrections are needed.</div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script></body></html>`;
+  
+.workerPdfRow{margin-top:12px}
+.workerPdfRow .pdfBtn{min-width:210px}
+@media(max-width:760px){
+  .workerPdfRow{display:grid!important;grid-template-columns:1fr;gap:10px}
+  .workerPdfRow .pdfBtn{width:100%;max-width:360px;margin:0 auto}
+}
+</style></head><body><div class="invoice"><div class="header"><div class="brand"><img src="${logo}"><div><h1>${escapeHtml(companyName)}</h1><p>BeeShift Payroll Statement</p><p>Company Code: ${escapeHtml(companyCode)}</p></div></div><div class="badge">${escapeHtml(title)}</div></div><div class="section"><div class="meta"><div class="box"><small>Worker</small><b>${escapeHtml(workerName)}</b></div><div class="box"><small>Period</small><b>${escapeHtml(period)}</b></div><div class="box"><small>Hourly Rate</small><b>${money(rate)}</b></div><div class="box"><small>Generated</small><b>${escapeHtml(generated)}</b></div></div><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Break</th><th>Hours</th><th>Rate</th><th>Earnings</th></tr></thead><tbody>${rowHtml||'<tr><td colspan="7" style="text-align:center">No completed entries for this period.</td></tr>'}</tbody></table><div class="totals"><div class="totalBox"><div class="totalLine"><span>Total Hours</span><b>${totalHours.toFixed(2)}</b></div><div class="totalLine"><span>Total Break</span><b>${totalBreak}m</b></div><div class="totalLine grand"><span>Total Earnings</span><span>${money(totalPay)}</span></div></div></div><div class="signatures"><div class="sig">Worker Signature</div><div class="sig">Manager Approval</div></div><div class="footer">This statement is generated by BeeShift. Please review with your manager if corrections are needed.</div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script></body></html>`;
   const w=window.open('','_blank');
   if(!w)return alert('Popup blocked. Allow popups to generate PDF.');
   w.document.open();w.document.write(html);w.document.close();
@@ -1552,28 +1745,34 @@ function renderWorkerScreen(){
 
   const o=openEntry(selectedWorker.id);
   const isIn=!!o;
-  const rate=Number(selectedWorker.rate||0);
 
-  const td=workerEntries('today');
-  const wk=workerEntries('week');
-
-  const th=td.reduce((s,e)=>s+hours(e),0);
-  const wh=wk.reduce((s,e)=>s+hours(e),0);
-
-  document.getElementById('todayHours').textContent=th.toFixed(2)+'h';
-  document.getElementById('weekHours').textContent=wh.toFixed(2)+'h';
-  document.getElementById('todayEarn').textContent=money(th*rate);
-  document.getElementById('weekEarn').textContent=money(wh*rate);
-
-  document.getElementById('workerStatus').textContent=isIn?'Clocked In':'Out';
+  document.getElementById('workerStatus').textContent=isIn?tr('clockedIn'):tr('out');
 
   const btn=document.getElementById('smartClockBtn');
-  btn.disabled=clockBusy;
-  btn.textContent=isIn?tr('clockOut'):tr('clockIn');
-  btn.className='bigClockBtn '+(isIn?'danger':'');
+  if(btn){
+    btn.textContent=isIn?tr('clockOut'):tr('clockIn');
+    btn.className=isIn?'bigClockBtn danger':'bigClockBtn';
+    btn.disabled=clockBusy;
+  }
 
   document.getElementById('breakStartBtn').disabled=!isIn||!!(o&&o.breakStart)||clockBusy;
   document.getElementById('breakEndBtn').disabled=!(o&&o.breakStart)||clockBusy;
+
+  const todays=workerEntries('today');
+  const weeks=workerEntries('week');
+
+  // IMPORTANT: use entryHoursLive so completed shifts and active shifts both count
+  const todayH=todays.reduce((s,e)=>s+entryHoursLive(e),0);
+  const weekH=weeks.reduce((s,e)=>s+entryHoursLive(e),0);
+
+  const rate=Number(selectedWorker.rate||0);
+
+  document.getElementById('todayHours').textContent=todayH.toFixed(2)+'h';
+  document.getElementById('weekHours').textContent=weekH.toFixed(2)+'h';
+  document.getElementById('todayEarn').textContent=money(todayH*rate);
+  document.getElementById('weekEarn').textContent=money(weekH*rate);
+
+  updateLiveStats();
 
   document.getElementById('myEntries').innerHTML=entries
     .filter(e=>e.workerId===selectedWorker.id)
@@ -1584,8 +1783,8 @@ function renderWorkerScreen(){
         <span>${fmtTime(e.inTime)}</span>
         <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
         <span>${e.breakMins||0}m</span>
-        <span>${hours(e).toFixed(2)}h</span>
-        <span>${money(hours(e)*rate)}</span>
+        <span>${entryHoursLive(e).toFixed(2)}h</span>
+        <span>${e.faceMatchStatus?e.faceMatchStatus:''}</span>
       </div>
     `).join('')||'<p class="muted">No entries yet</p>';
 }
@@ -1696,6 +1895,7 @@ setInterval(()=>{
   const el=document.getElementById('liveClock');
   if(el)el.textContent=new Date().toLocaleTimeString();
   updateLiveStats();
+  refreshLiveAdminDash();
 },1000);
 
 if('serviceWorker' in navigator){
