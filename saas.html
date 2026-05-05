@@ -326,6 +326,15 @@ main{animation:screenEnter .35s ease}
   to { opacity:1; transform:translateY(0) scale(1); }
 }
 
+
+.liveStatsCard{
+  background:#171200;
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:14px;
+  margin-top:10px;
+}
+.liveStatsCard p{margin:8px 0}
 </style>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
@@ -515,6 +524,12 @@ main{animation:screenEnter .35s ease}
     <div class="earnGrid">
       <div class="earnCard"><small>Today</small><b id="todayEarn">$0.00</b><span id="todayHours">0.00h</span></div>
       <div class="earnCard"><small>This Week</small><b id="weekEarn">$0.00</b><span id="weekHours">0.00h</span></div>
+    </div>
+
+    <div class="liveStatsCard">
+      <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
+      <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
+      <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
     </div>
 
     <p>Status: <b id="workerStatus">Out</b></p>
@@ -1289,8 +1304,72 @@ function workerEntries(range){
     .filter(e=>range==='today'?isToday(e):range==='week'?isThisWeek(e):true);
 }
 
+
+function formatDurationMs(ms){
+  let total=Math.max(0,Math.floor(ms/1000));
+  let h=Math.floor(total/3600);
+  let m=Math.floor((total%3600)/60);
+  let s=total%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function formatBreakMinutes(ms){
+  let total=Math.max(0,Math.floor(ms/60000));
+  let h=Math.floor(total/60);
+  let m=total%60;
+  return h>0?`${h}h ${m}m`:`${m}m`;
+}
+
+function activeWorkedMs(entry){
+  if(!entry || !entry.inTime) return 0;
+  const now=new Date();
+  const start=new Date(entry.inTime);
+  let breakMs=(entry.breakMins||0)*60000;
+  if(entry.breakStart){
+    breakMs += now - new Date(entry.breakStart);
+  }
+  return Math.max(0, now - start - breakMs);
+}
+
+function updateLiveStats(){
+  const workEl=document.getElementById('liveWorkTime');
+  const earnEl=document.getElementById('liveEarnings');
+  const breakRow=document.getElementById('breakRow');
+  const breakEl=document.getElementById('liveBreakTime');
+  if(!workEl || !earnEl) return;
+
+  if(!selectedWorker){
+    workEl.textContent='00:00:00';
+    earnEl.textContent='$0.00';
+    if(breakRow)breakRow.style.display='none';
+    return;
+  }
+
+  const entry=openEntry(selectedWorker.id);
+  if(!entry){
+    workEl.textContent='00:00:00';
+    earnEl.textContent='$0.00';
+    if(breakRow)breakRow.style.display='none';
+    return;
+  }
+
+  const workedMs=activeWorkedMs(entry);
+  const livePay=(workedMs/3600000)*Number(selectedWorker.rate||0);
+  workEl.textContent=formatDurationMs(workedMs);
+  earnEl.textContent=money(livePay);
+
+  if(entry.breakStart){
+    const runningBreakMs=((entry.breakMins||0)*60000)+(new Date()-new Date(entry.breakStart));
+    if(breakRow)breakRow.style.display='block';
+    if(breakEl)breakEl.textContent=formatBreakMinutes(runningBreakMs);
+  }else{
+    if(breakRow)breakRow.style.display='none';
+  }
+}
+
 function renderWorkerScreen(){
   if(!selectedWorker)return;
+  setTimeout(updateLiveStats,0);
 
   const o=openEntry(selectedWorker.id);
   const isIn=!!o;
