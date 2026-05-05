@@ -689,8 +689,12 @@ let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,cur
 let clockBusy=false,unsubW=null,unsubE=null;
 
 function screen(id){
-  ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>document.getElementById(x).classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
+  ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>{
+    const el=document.getElementById(x);
+    if(el)el.classList.add('hidden');
+  });
+  const target=document.getElementById(id);
+  if(target)target.classList.remove('hidden');
 }
 window.screen=screen;
 
@@ -849,25 +853,7 @@ window.toggleAppLang=()=>{
   applyBeeLang();
   if(typeof renderAll==='function')renderAll();
 };
-function applyLang(){
-  const b=document.getElementById('langToggleBtn');
-  if(b)b.textContent=appLang==='en'?'Español':'English';
-  document.documentElement.lang=appLang;
-  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.dataset[appLang]||el.dataset.en});
-  setText('button[onclick="openWorkerKioskStart()"]',tr('workerKiosk'));
-  setText('button[onclick="openAdminLogin()"]',tr('adminLogin'));
-  setText('button[onclick="openCreateCompany()"]',tr('createCompany'));
-  setText('button[onclick="loadKioskCompany()"]',tr('continue'));
-  setText('button[onclick="login()"]',tr('login'));
-  setText('button[onclick="signup()"]',tr('createCompany'));
-  setText('button[onclick="checkGPS()"]',tr('checkGPS'));
-  setText('#breakStartBtn',tr('startBreak'));
-  setText('#breakEndBtn',tr('endBreak'));
-  setText("button[onclick=\"downloadWorkerCSV(\'today\')\"]",tr("downloadToday"));
-  setText("button[onclick=\"downloadWorkerCSV(\'week\')\"]",tr("downloadWeek"));
-  const photoLabel=document.querySelector('label[for="clockPhoto"]'); if(photoLabel) photoLabel.textContent=tr('photoLabel');
-  const workerHint=document.querySelector('#workerScreen .photoHint'); if(workerHint) workerHint.textContent=tr('photoHint');
-}
+
 
 
 function msg(id,t,c='error'){
@@ -885,15 +871,35 @@ function entriesRef(){return F.collection(db,'companies',currentCompanyId,'entri
 function entryDoc(id){return F.doc(db,'companies',currentCompanyId,'entries',id)}
 
 window.openWorkerKioskStart=()=>{
-  document.getElementById('kioskCompanyCode').value=localStorage.getItem('lastKioskCompany')||'';
+  const input=document.getElementById('kioskCompanyCode');
+  if(input)input.value=localStorage.getItem('lastKioskCompany')||'';
   screen('kioskStart');
 }
 window.openAdminLogin=()=>screen('login');
 window.openCreateCompany=()=>screen('signup');
 
+
+// Backup click handlers in case mobile Safari ignores stale inline handlers after cache/translation changes.
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('button');
+  if(!btn)return;
+  const txt=(btn.textContent||'').trim();
+  if(txt.includes('Worker Kiosk')||txt.includes('Kiosko Trabajador')){
+    e.preventDefault();
+    window.openWorkerKioskStart();
+  }
+  if(txt.includes('Admin Login')||txt==='Admin'){
+    e.preventDefault();
+    window.openAdminLogin();
+  }
+  if(txt.includes('Create Company')||txt.includes('Crear Empresa')){
+    e.preventDefault();
+    window.openCreateCompany();
+  }
+});
+
 async function init(){
   applyBeeLang();
-  applyLang();
   try{
     const A=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const AU=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
