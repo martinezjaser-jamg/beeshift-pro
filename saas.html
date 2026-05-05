@@ -947,22 +947,36 @@ function refreshLiveAdminDash(){
   if(admin&&!admin.classList.contains('hidden'))renderDash();
 }
 
-function renderWorkers(){
-  const el=document.getElementById('workers');if(!el)return;
 
-  el.innerHTML=workers.map(w=>`
-    <div class="worker">
-      ${workerProfileHTML(w)}
-      <b>${w.name}</b><br>
-      PIN: ${w.pin}<br>
-      Rate: ${money(w.rate)}/hr<br>
-      Status: ${openEntry(w.id)?'<span class="statusIn">🟢 In</span>':'<span class="statusOut">⬤ Out</span>'}<br>
-      ${w.profilePhoto?'<span class="pill">Profile Photo ✓</span>':'<span class="pill">No Photo</span>'}<br>
-      <button onclick="viewWorkerLogs('${w.id}')">View Logs</button>
-      <button onclick="openEditWorker('${w.id}')">Edit Profile</button>
-      <button class="danger" onclick="removeWorker('${w.id}')">Remove</button>
-    </div>
-  `).join('')||'<div class="worker">No workers yet</div>';
+function workerProfileHTML(w){
+  if(w&&w.profilePhoto){
+    return `<img class="profilePhoto" src="${w.profilePhoto}" alt="${w.name||'Worker'}">`;
+  }
+  return `<div class="profilePlaceholder">👤</div>`;
+}
+
+function renderWorkers(){
+  const el=document.getElementById('workers');
+  if(!el)return;
+
+  try{
+    el.innerHTML=workers.map(w=>`
+      <div class="worker">
+        ${workerProfileHTML(w)}
+        <b>${w.name||'Worker'}</b><br>
+        PIN: ${w.pin||''}<br>
+        Rate: ${money(w.rate||0)}/hr<br>
+        Status: ${openEntry(w.id)?'<span class="statusIn">🟢 In</span>':'<span class="statusOut">⬤ Out</span>'}<br>
+        ${w.profilePhoto?'<span class="pill">Profile Photo ✓</span>':'<span class="pill">No Photo</span>'}<br>
+        <button onclick="viewWorkerLogs('${w.id}')">View Logs</button>
+        <button onclick="openEditWorker('${w.id}')">Edit Profile</button>
+        <button class="danger" onclick="removeWorker('${w.id}')">Remove</button>
+      </div>
+    `).join('')||'<div class="worker">No workers yet</div>';
+  }catch(err){
+    console.error('renderWorkers error:',err);
+    el.innerHTML='<div class="worker error">Could not load workers.</div>';
+  }
 }
 
 function renderKiosk(){
