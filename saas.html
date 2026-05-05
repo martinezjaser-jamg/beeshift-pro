@@ -341,13 +341,6 @@ main{animation:screenEnter .35s ease}
 .liveStatsCard{background:#171200;border:1px solid var(--border);border-radius:18px;padding:14px;margin-top:10px}
 .liveStatsCard p{margin:8px 0}
 .pdfBtn{background:#fff3b0!important;color:#1a1400!important}
-
-.workerPdfRow{margin-top:12px}
-.workerPdfRow .pdfBtn{min-width:210px}
-@media(max-width:760px){
-  .workerPdfRow{display:grid!important;grid-template-columns:1fr;gap:10px}
-  .workerPdfRow .pdfBtn{width:100%;max-width:360px;margin:0 auto}
-}
 </style>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
@@ -581,6 +574,10 @@ main{animation:screenEnter .35s ease}
       <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
       <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
       <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
+      <div class="row">
+        <button class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
+        <button class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
+      </div>
     </div>
 
     <p>Status: <b id="workerStatus">Out</b></p>
@@ -601,17 +598,12 @@ main{animation:screenEnter .35s ease}
       <button id="breakEndBtn" class="green" onclick="endBreak()">End Break</button>
     </div>
 
-    <div class="row workerPdfRow">
-      <button id="dailyPdfBtn" class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
-      <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
+    <div class="row">
+      <button class="smallLink" onclick="downloadWorkerCSV('today')">Download Today</button>
+      <button class="smallLink" onclick="downloadWorkerCSV('week')">Download Week</button>
     </div>
 
-    <div class="row workerPdfRow">
-      <button class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
-      <button class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
-    </div>
-
-    <p class="muted" id="photoNotice">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
+    <p class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
   </div>
 
   <div class="card"><h3>My recent entries</h3><div id="myEntries"></div></div>
@@ -689,145 +681,10 @@ let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,cur
 let clockBusy=false,unsubW=null,unsubE=null;
 
 function screen(id){
-  ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>{
-    const el=document.getElementById(x);
-    if(el)el.classList.add('hidden');
-  });
-  const target=document.getElementById(id);
-  if(target)target.classList.remove('hidden');
+  ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
 }
 window.screen=screen;
-
-function safeSetTextById(id,text){
-  const el=document.getElementById(id);
-  if(el) el.textContent=text;
-}
-function safeSetAll(selector,text){
-  document.querySelectorAll(selector).forEach(el=>el.textContent=text);
-}
-function tBee(key){
-  const dict={
-    en:{
-      lang:'Español',
-      workerKiosk:'👷 Worker Kiosk',
-      adminLogin:'🔐 Admin Login',
-      createCompany:'➕ Create Company',
-      exit:'Exit',
-      logout:'Logout',
-      checkGPS:'Check GPS',
-      startBreak:'Start Break',
-      endBreak:'End Break',
-      clockIn:'⏱ Clock In',
-      clockOut:'⏹ Clock Out',
-      out:'Out',
-      clockedIn:'Clocked In',
-      takePhoto:'📸 Take Required Clock Photo',
-      requiredOnly:'Required only for Clock In and Clock Out',
-      photoNotice:'Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.',
-      dailyPdf:'📄 Daily Pay PDF',
-      weeklyPdf:'📄 Weekly Pay PDF',
-      workTime:'⏱ Work Time',
-      liveEarnings:'💰 Live Earnings',
-      today:'Today',
-      thisWeek:'This Week',
-      dashboard:'Dashboard',
-      workers:'Workers',
-      payroll:'Payroll',
-      timeLogs:'Time Logs',
-      settings:'Settings'
-    },
-    es:{
-      lang:'English',
-      workerKiosk:'👷 Kiosko Trabajador',
-      adminLogin:'🔐 Admin',
-      createCompany:'➕ Crear Empresa',
-      exit:'Salir',
-      logout:'Cerrar Sesión',
-      checkGPS:'Revisar GPS',
-      startBreak:'Iniciar Descanso',
-      endBreak:'Terminar Descanso',
-      clockIn:'⏱ Entrada',
-      clockOut:'⏹ Salida',
-      out:'Fuera',
-      clockedIn:'En Turno',
-      takePhoto:'📸 Tomar Foto Requerida',
-      requiredOnly:'Requerida solo para Entrada y Salida',
-      photoNotice:'La foto y el GPS son obligatorios solo para entrada y salida. Los botones de descanso funcionan mientras tu turno está activo.',
-      dailyPdf:'📄 PDF Diario',
-      weeklyPdf:'📄 PDF Semanal',
-      workTime:'⏱ Tiempo Trabajado',
-      liveEarnings:'💰 Ganancia en Vivo',
-      today:'Hoy',
-      thisWeek:'Esta Semana',
-      dashboard:'Panel',
-      workers:'Trabajadores',
-      payroll:'Nómina',
-      timeLogs:'Registros',
-      settings:'Ajustes'
-    }
-  };
-  return (dict[appLang]&&dict[appLang][key])||(dict.en&&dict.en[key])||key;
-}
-function applyBeeLang(){
-  const langBtn=document.getElementById('langToggleBtn');
-  if(langBtn) langBtn.textContent=tBee('lang');
-  document.documentElement.lang=appLang;
-
-  // Main home buttons
-  const homeBtns=document.querySelectorAll('.homeBtn');
-  if(homeBtns[0]) homeBtns[0].textContent=tBee('workerKiosk');
-  if(homeBtns[1]) homeBtns[1].textContent=tBee('adminLogin');
-  if(homeBtns[2]) homeBtns[2].textContent=tBee('createCompany');
-
-  // Header buttons
-  document.querySelectorAll('button').forEach(btn=>{
-    const txt=(btn.textContent||'').trim();
-    if(txt==='Logout'||txt==='Cerrar Sesión') btn.textContent=tBee('logout');
-    if(txt==='Exit'||txt==='Salir') btn.textContent=tBee('exit');
-    if(txt==='Check GPS'||txt==='Revisar GPS') btn.textContent=tBee('checkGPS');
-    if(txt==='Start Break'||txt==='Iniciar Descanso') btn.textContent=tBee('startBreak');
-    if(txt==='End Break'||txt==='Terminar Descanso') btn.textContent=tBee('endBreak');
-  });
-
-  // Known worker controls
-  safeSetTextById('breakStartBtn',tBee('startBreak'));
-  safeSetTextById('breakEndBtn',tBee('endBreak'));
-  safeSetTextById('dailyPdfBtn',tBee('dailyPdf'));
-  safeSetTextById('weeklyPdfBtn',tBee('weeklyPdf'));
-
-  const photoLabel=document.querySelector('label[for="clockPhoto"]');
-  if(photoLabel) photoLabel.textContent=tBee('takePhoto');
-  const photoHint=document.querySelector('#workerScreen .photoHint');
-  if(photoHint) photoHint.textContent=tBee('requiredOnly');
-  safeSetTextById('photoNotice',tBee('photoNotice'));
-
-  const workEl=document.getElementById('liveWorkTime');
-  if(workEl && workEl.parentElement) workEl.parentElement.childNodes[0].nodeValue=tBee('workTime')+': ';
-  const earnEl=document.getElementById('liveEarnings');
-  if(earnEl && earnEl.parentElement) earnEl.parentElement.childNodes[0].nodeValue=tBee('liveEarnings')+': ';
-
-  const earnCards=document.querySelectorAll('.earnCard small');
-  if(earnCards[0]) earnCards[0].textContent=tBee('today');
-  if(earnCards[1]) earnCards[1].textContent=tBee('thisWeek');
-
-  // Admin tabs by order
-  const tabs=document.querySelectorAll('.tabs .tab');
-  if(tabs[0]) tabs[0].textContent=tBee('dashboard');
-  if(tabs[1]) tabs[1].textContent=tBee('workers');
-  if(tabs[2]) tabs[2].textContent=tBee('payroll');
-  if(tabs[3]) tabs[3].textContent=tBee('timeLogs');
-  if(tabs[4]) tabs[4].textContent=tBee('settings');
-
-  // Smart clock button
-  const smart=document.getElementById('smartClockBtn');
-  const status=document.getElementById('workerStatus');
-  if(selectedWorker && smart){
-    const o=openEntry(selectedWorker.id);
-    smart.textContent=o?tBee('clockOut'):tBee('clockIn');
-    if(status) status.textContent=o?tBee('clockedIn'):tBee('out');
-  }
-}
-
 
 const T={
   en:{
@@ -850,10 +707,28 @@ function setText(selector,text){document.querySelectorAll(selector).forEach(e=>e
 window.toggleAppLang=()=>{
   appLang=appLang==='en'?'es':'en';
   localStorage.setItem('beeshift_lang',appLang);
-  applyBeeLang();
-  if(typeof renderAll==='function')renderAll();
-};
-
+  applyLang();
+  renderAll();
+}
+function applyLang(){
+  const b=document.getElementById('langToggleBtn');
+  if(b)b.textContent=appLang==='en'?'Español':'English';
+  document.documentElement.lang=appLang;
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.dataset[appLang]||el.dataset.en});
+  setText('button[onclick="openWorkerKioskStart()"]',tr('workerKiosk'));
+  setText('button[onclick="openAdminLogin()"]',tr('adminLogin'));
+  setText('button[onclick="openCreateCompany()"]',tr('createCompany'));
+  setText('button[onclick="loadKioskCompany()"]',tr('continue'));
+  setText('button[onclick="login()"]',tr('login'));
+  setText('button[onclick="signup()"]',tr('createCompany'));
+  setText('button[onclick="checkGPS()"]',tr('checkGPS'));
+  setText('#breakStartBtn',tr('startBreak'));
+  setText('#breakEndBtn',tr('endBreak'));
+  setText("button[onclick=\"downloadWorkerCSV(\'today\')\"]",tr("downloadToday"));
+  setText("button[onclick=\"downloadWorkerCSV(\'week\')\"]",tr("downloadWeek"));
+  const photoLabel=document.querySelector('label[for="clockPhoto"]'); if(photoLabel) photoLabel.textContent=tr('photoLabel');
+  const workerHint=document.querySelector('#workerScreen .photoHint'); if(workerHint) workerHint.textContent=tr('photoHint');
+}
 
 
 function msg(id,t,c='error'){
@@ -871,35 +746,14 @@ function entriesRef(){return F.collection(db,'companies',currentCompanyId,'entri
 function entryDoc(id){return F.doc(db,'companies',currentCompanyId,'entries',id)}
 
 window.openWorkerKioskStart=()=>{
-  const input=document.getElementById('kioskCompanyCode');
-  if(input)input.value=localStorage.getItem('lastKioskCompany')||'';
+  document.getElementById('kioskCompanyCode').value=localStorage.getItem('lastKioskCompany')||'';
   screen('kioskStart');
 }
 window.openAdminLogin=()=>screen('login');
 window.openCreateCompany=()=>screen('signup');
 
-
-// Backup click handlers in case mobile Safari ignores stale inline handlers after cache/translation changes.
-document.addEventListener('click',e=>{
-  const btn=e.target.closest('button');
-  if(!btn)return;
-  const txt=(btn.textContent||'').trim();
-  if(txt.includes('Worker Kiosk')||txt.includes('Kiosko Trabajador')){
-    e.preventDefault();
-    window.openWorkerKioskStart();
-  }
-  if(txt.includes('Admin Login')||txt==='Admin'){
-    e.preventDefault();
-    window.openAdminLogin();
-  }
-  if(txt.includes('Create Company')||txt.includes('Crear Empresa')){
-    e.preventDefault();
-    window.openCreateCompany();
-  }
-});
-
 async function init(){
-  applyBeeLang();
+  applyLang();
   try{
     const A=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const AU=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
@@ -1755,14 +1609,7 @@ function premiumPayPDF(range){
   const generated=new Date().toLocaleString();
   const html=`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
   *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:28px;color:#1a1400;background:#fff}.invoice{max-width:860px;margin:0 auto;border:1px solid #e5d28a;border-radius:18px;overflow:hidden}.header{background:linear-gradient(135deg,#1a1400,#3a2d00);color:#fff8e0;padding:26px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;align-items:center;gap:14px}.brand img{width:72px;height:72px;border-radius:18px;object-fit:contain;background:#f5c400;padding:5px}.brand h1{margin:0;color:#f5c400;font-size:26px}.brand p{margin:3px 0;color:#fff8e0}.badge{border:1px solid #f5c400;border-radius:999px;padding:8px 12px;color:#f5c400;font-weight:bold;text-align:center}.section{padding:22px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.box{border:1px solid #ecd77b;border-radius:14px;padding:14px;background:#fffaf0}.box small{display:block;color:#7a6400;text-transform:uppercase;font-size:11px;letter-spacing:.06em}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f5c400;color:#1a1400;padding:10px;font-size:12px;text-align:left}td{border-bottom:1px solid #eee;padding:10px;font-size:13px}.totals{display:flex;justify-content:flex-end;margin-top:18px}.totalBox{min-width:280px;border:2px solid #f5c400;border-radius:16px;padding:16px;background:#fff8d6}.totalLine{display:flex;justify-content:space-between;margin:8px 0}.grand{font-size:22px;font-weight:900;color:#1a1400;border-top:1px solid #d1b000;padding-top:10px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:42px}.sig{border-top:1px solid #1a1400;padding-top:8px;text-align:center;color:#5b4b00}.footer{text-align:center;color:#7a6400;font-size:12px;margin-top:22px}@media print{body{padding:0}.invoice{border-radius:0;border:0}}
-  
-.workerPdfRow{margin-top:12px}
-.workerPdfRow .pdfBtn{min-width:210px}
-@media(max-width:760px){
-  .workerPdfRow{display:grid!important;grid-template-columns:1fr;gap:10px}
-  .workerPdfRow .pdfBtn{width:100%;max-width:360px;margin:0 auto}
-}
-</style></head><body><div class="invoice"><div class="header"><div class="brand"><img src="${logo}"><div><h1>${escapeHtml(companyName)}</h1><p>BeeShift Payroll Statement</p><p>Company Code: ${escapeHtml(companyCode)}</p></div></div><div class="badge">${escapeHtml(title)}</div></div><div class="section"><div class="meta"><div class="box"><small>Worker</small><b>${escapeHtml(workerName)}</b></div><div class="box"><small>Period</small><b>${escapeHtml(period)}</b></div><div class="box"><small>Hourly Rate</small><b>${money(rate)}</b></div><div class="box"><small>Generated</small><b>${escapeHtml(generated)}</b></div></div><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Break</th><th>Hours</th><th>Rate</th><th>Earnings</th></tr></thead><tbody>${rowHtml||'<tr><td colspan="7" style="text-align:center">No completed entries for this period.</td></tr>'}</tbody></table><div class="totals"><div class="totalBox"><div class="totalLine"><span>Total Hours</span><b>${totalHours.toFixed(2)}</b></div><div class="totalLine"><span>Total Break</span><b>${totalBreak}m</b></div><div class="totalLine grand"><span>Total Earnings</span><span>${money(totalPay)}</span></div></div></div><div class="signatures"><div class="sig">Worker Signature</div><div class="sig">Manager Approval</div></div><div class="footer">This statement is generated by BeeShift. Please review with your manager if corrections are needed.</div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script></body></html>`;
+  </style></head><body><div class="invoice"><div class="header"><div class="brand"><img src="${logo}"><div><h1>${escapeHtml(companyName)}</h1><p>BeeShift Payroll Statement</p><p>Company Code: ${escapeHtml(companyCode)}</p></div></div><div class="badge">${escapeHtml(title)}</div></div><div class="section"><div class="meta"><div class="box"><small>Worker</small><b>${escapeHtml(workerName)}</b></div><div class="box"><small>Period</small><b>${escapeHtml(period)}</b></div><div class="box"><small>Hourly Rate</small><b>${money(rate)}</b></div><div class="box"><small>Generated</small><b>${escapeHtml(generated)}</b></div></div><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Break</th><th>Hours</th><th>Rate</th><th>Earnings</th></tr></thead><tbody>${rowHtml||'<tr><td colspan="7" style="text-align:center">No completed entries for this period.</td></tr>'}</tbody></table><div class="totals"><div class="totalBox"><div class="totalLine"><span>Total Hours</span><b>${totalHours.toFixed(2)}</b></div><div class="totalLine"><span>Total Break</span><b>${totalBreak}m</b></div><div class="totalLine grand"><span>Total Earnings</span><span>${money(totalPay)}</span></div></div></div><div class="signatures"><div class="sig">Worker Signature</div><div class="sig">Manager Approval</div></div><div class="footer">This statement is generated by BeeShift. Please review with your manager if corrections are needed.</div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script></body></html>`;
   const w=window.open('','_blank');
   if(!w)return alert('Popup blocked. Allow popups to generate PDF.');
   w.document.open();w.document.write(html);w.document.close();
@@ -1776,11 +1623,11 @@ function renderWorkerScreen(){
   const o=openEntry(selectedWorker.id);
   const isIn=!!o;
 
-  document.getElementById('workerStatus').textContent=isIn?tBee('clockedIn'):tBee('out');
+  document.getElementById('workerStatus').textContent=isIn?'Clocked In':'Out';
 
   const btn=document.getElementById('smartClockBtn');
   if(btn){
-    btn.textContent=isIn?tBee('clockOut'):tBee('clockIn');
+    btn.textContent=isIn?tr('clockOut'):tr('clockIn');
     btn.className=isIn?'bigClockBtn danger':'bigClockBtn';
     btn.disabled=clockBusy;
   }
