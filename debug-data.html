@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BeeShift Debug Data</title>
+<style>
+body{margin:0;background:#1a1400;color:#fff8e0;font-family:Arial;padding:18px}
+.card{background:#2c2400;border:1px solid #4a3a00;border-radius:18px;padding:16px;margin:12px 0}
+input,button{width:100%;box-sizing:border-box;padding:14px;margin:8px 0;border-radius:12px;border:1px solid #4a3a00;font-size:16px}
+input{background:#111;color:white}button{background:#f5c400;color:#1a1400;font-weight:900;border:0}
+pre{white-space:pre-wrap;word-break:break-word;background:#111;border-radius:12px;padding:12px;color:#fff3b0;max-height:520px;overflow:auto}
+.ok{color:#00c864}.bad{color:#ff5252}.muted{color:#b9a765}
+</style>
+</head>
+<body>
+<h1>🐝 BeeShift Debug Data</h1>
+<div class="card">
+  <p class="muted">Type the company code exactly as used in the app.</p>
+  <input id="companyCode" placeholder="example: lem-hon-pro2026">
+  <button onclick="runDebug()">🐞 Check Data</button>
+  <button onclick="checkDefault()">Check lem-hon-pro2026</button>
+</div>
+<div class="card">
+  <h2>Result</h2>
+  <pre id="out">Waiting...</pre>
+</div>
+<script type="module">
+const firebaseConfig={
+  apiKey:"AIzaSyCdBWbKFbfxLP_5q5EzbUBt7IrStvI5jLc",
+  authDomain:"beeshift-pro.firebaseapp.com",
+  projectId:"beeshift-pro",
+  storageBucket:"beeshift-pro.firebasestorage.app",
+  messagingSenderId:"395977679108",
+  appId:"1:395977679108:web:138bf800a720bfebcdb051"
+};
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,doc,getDoc,collection,getDocs,limit,query}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+function cleanCompany(s){return(s||'').toLowerCase().trim().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,45)}
+window.checkDefault=()=>{document.getElementById('companyCode').value='lem-hon-pro2026';runDebug()}
+window.runDebug=async()=>{
+  const out=document.getElementById('out');
+  const raw=document.getElementById('companyCode').value;
+  const code=cleanCompany(raw);
+  out.textContent='Checking '+code+' ...';
+  try{
+    const companySnap=await getDoc(doc(db,'companies',code));
+    const workersSnap=await getDocs(query(collection(db,'companies',code,'workers'),limit(20)));
+    const entriesSnap=await getDocs(query(collection(db,'companies',code,'entries'),limit(20)));
+    const workers=workersSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const entries=entriesSnap.docs.map(d=>({id:d.id,...d.data()}));
+    out.textContent=
+`COMPANY CODE USED:\n${code}\n\nCOMPANY EXISTS:\n${companySnap.exists()}\n\nCOMPANY DATA:\n${JSON.stringify(companySnap.exists()?companySnap.data():null,null,2)}\n\nWORKERS COUNT:\n${workers.length}\n\nWORKERS DATA:\n${JSON.stringify(workers,null,2)}\n\nENTRIES COUNT:\n${entries.length}\n\nENTRIES DATA:\n${JSON.stringify(entries,null,2)}`;
+  }catch(e){
+    out.textContent='ERROR:\n'+(e&&e.message?e.message:String(e));
+  }
+};
+const params=new URLSearchParams(location.search);
+if(params.get('company')){document.getElementById('companyCode').value=params.get('company');runDebug()}
+</script>
+</body>
+</html>
