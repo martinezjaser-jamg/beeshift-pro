@@ -660,7 +660,17 @@ let app,auth,db,F,currentUser=null,currentCompanyId=null;
 let companySettings={plan:'basic',workerLimit:10,radiusMeters:150,status:'active'};
 let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,currentPhotoData=null,workerProfilePhotoData=null,editWorkerProfilePhotoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
 let clockBusy=false,unsubW=null,unsubE=null;
+function workerProfileHTML(w){
 
+  if(w && w.profilePhoto){
+
+    return `<img class="profilePhoto" src="${w.profilePhoto}" alt="${w.name || 'Worker'}">`;
+
+  }
+
+  return `<div class="profilePlaceholder">👤</div>`;
+
+}
 function screen(id){
   ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>document.getElementById(x).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
