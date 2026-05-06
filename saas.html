@@ -537,7 +537,7 @@ main{animation:screenEnter .35s ease}
     <div id="kioskCompanyLogo"></div><div id="kioskCompany" class="muted"></div>
     <div class="row"><button class="smallLink" onclick="leaveKiosk()">Change Company</button></div>
   </div>
-  <div class="card"><h3>Workers</h3><div id="kioskWorkers"></div></div>
+  <div class="card"><h3>Workers</h3><div id="kioskWorkers"></div><button class="smallLink" onclick="debugData()">🐞 Debug Data</button><div id="debugBox" class="muted" style="display:none;white-space:pre-wrap;word-break:break-word;background:#111;border-radius:12px;padding:10px;margin-top:8px"></div></div>
 </main>
 
 <main id="workerScreen" class="hidden">
@@ -660,22 +660,29 @@ let app,auth,db,F,currentUser=null,currentCompanyId=null;
 let companySettings={plan:'basic',workerLimit:10,radiusMeters:150,status:'active'};
 let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,currentPhotoData=null,workerProfilePhotoData=null,editWorkerProfilePhotoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
 let clockBusy=false,unsubW=null,unsubE=null;
-function workerProfileHTML(w){
 
-  if(w && w.profilePhoto){
-
-    return `<img class="profilePhoto" src="${w.profilePhoto}" alt="${w.name || 'Worker'}">`;
-
-  }
-
-  return `<div class="profilePlaceholder">👤</div>`;
-
-}
 function screen(id){
   ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>document.getElementById(x).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
 window.screen=screen;
+
+function debugData(){
+  const text='COMPANY: '+currentCompanyId+
+    '\nWORKERS: '+(Array.isArray(workers)?workers.length:'not array')+
+    '\nENTRIES: '+(Array.isArray(entries)?entries.length:'not array')+
+    '\nSTATUS: '+(companySettings&&companySettings.status?companySettings.status:'')+
+    '\n\nFIRST WORKER:\n'+JSON.stringify((workers||[])[0]||null,null,2).slice(0,900);
+  const box=document.getElementById('debugBox');
+  if(box){
+    box.style.display=box.style.display==='none'?'block':'none';
+    box.textContent=text;
+  }else{
+    alert(text);
+  }
+}
+window.debugData=debugData;
+
 
 const T={
   en:{
@@ -947,15 +954,18 @@ function isToday(e){return fmtDate(e.inTime)===fmtDate(new Date())}
 function isThisWeek(e){return new Date(e.inTime)>=weekStart()}
 
 function renderAll(){
-  renderWorkers();
-  renderKiosk();
-  renderDash();
-  renderPayroll();
-  renderEntries();
-  renderWorkerScreen();
+  const renders=[
+    ['renderWorkers',()=>renderWorkers()],
+    ['renderKiosk',()=>renderKiosk()],
+    ['renderDash',()=>renderDash()],
+    ['renderPayroll',()=>renderPayroll()],
+    ['renderEntries',()=>renderEntries()],
+    ['renderWorkerScreen',()=>renderWorkerScreen()]
+  ];
+  renders.forEach(([name,fn])=>{
+    try{fn()}catch(err){console.error(name+' failed:',err)}
+  });
 }
-
-
 function formatDurationMs(ms){
   let total=Math.max(0,Math.floor(ms/1000));
   let h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
@@ -1037,200 +1047,72 @@ function refreshLiveAdminDash(){
   if(admin&&!admin.classList.contains('hidden'))renderDash();
 }
 function renderPayroll(){
-  const el=document.getElementById('payroll');if(!el)return;
-
-  el.innerHTML=workers.map(w=>{
-    const h=entries.filter(e=>e.workerId===w.id).reduce((s,e)=>s+hours(e),0);
-    return`
-      <div class="table-row">
-        <span>${w.name}</span>
-        <span>${h.toFixed(2)}</span>
-        <span>${money(w.rate)}</span>
-        <span>${money(h*Number(w.rate||0))}</span>
-        <span>OK</span>
-        <span><button onclick="viewWorkerLogs('${w.id}')">Logs</button></span>
-      </div>
-    `;
-  }).join('')||'<p class="muted">No payroll yet</p>';
-}
-
-
-function photoButtons(e){
-  const profileBtn=profilePhotoButton(e.workerId);
-  const inBtn=e.photoIn?`<button onclick="openPhotoModal('${e.id}','in')">In Photo</button>`:'';
-  const outBtn=e.photoOut?`<button onclick="openPhotoModal('${e.id}','out')">Out Photo</button>`:'';
-  return `<div class="photoActions">${profileBtn}${inBtn}${outBtn}<button onclick="openEditEntry('${e.id}')">Edit</button></div>`;
-}
-window.openPhotoModal=(id,type)=>{
-  const e=entries.find(x=>x.id===id);
-  if(!e)return;
-  const url=type==='in'?e.photoIn:e.photoOut;
-  if(!url)return alert('No photo saved for this action.');
-  document.getElementById('photoModalTitle').textContent=(type==='in'?'Clock In':'Clock Out')+' Photo - '+(e.workerName||'Worker');
-  document.getElementById('photoModalImg').src=url;
-  document.getElementById('photoModal').classList.add('open');
-}
-window.closePhotoModal=()=>{
-  document.getElementById('photoModalImg').src='';
-  document.getElementById('photoModal').classList.remove('open');
+  const el=document.getElementById('payroll');
+  if(!el)return;
+  try{
+    if(!Array.isArray(workers))workers=[];
+    if(!Array.isArray(entries))entries=[];
+    if(!workers.length){
+      el.innerHTML='<p class="muted">No workers yet.</p>';
+      return;
+    }
+    const start=weekStart();
+    el.innerHTML=workers.map(w=>{
+      const workerEntries=entries.filter(e=>e.workerId===w.id && new Date(e.inTime)>=start);
+      const totalHours=workerEntries.reduce((s,e)=>s+entryHoursLive(e),0);
+      const rate=Number(w.rate||0);
+      const gross=totalHours*rate;
+      const isIn=!!openEntry(w.id);
+      const id=safeText(w.id);
+      return `
+        <div class="table-row">
+          <span>${workerMiniPhotoHTML(w)}${safeText(w.name||'Worker')}</span>
+          <span>${totalHours.toFixed(2)}</span>
+          <span>${money(rate)}</span>
+          <span>${money(gross)}</span>
+          <span>${isIn?'<span class="statusIn">In</span>':'<span class="statusOut">Out</span>'}</span>
+          <span><button onclick="viewWorkerLogs('${id}')">Logs</button></span>
+        </div>
+      `;
+    }).join('');
+  }catch(err){
+    console.error('renderPayroll error:',err);
+    el.innerHTML='<p class="error">Payroll could not render.</p>';
+  }
 }
 
 function renderEntries(){
-  const el=document.getElementById('entries');if(!el)return;
-
-  el.innerHTML=entries.map(e=>`
-    <div class="table-row">
-      <span>${e.workerName}</span>
-      <span>${fmtDate(e.inTime)}</span>
-      <span>${fmtTime(e.inTime)}</span>
-      <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
-      <span>${hours(e).toFixed(2)}</span>
-      <span>${photoButtons(e)}</span>
-      ${e.editedAt?`<div class="audit" style="grid-column:1/-1">Edited by ${e.editedBy||'admin'} at ${new Date(e.editedAt).toLocaleString()}</div>`:''}
-    </div>
-  `).join('')||'<p class="muted">No entries yet</p>';
-}
-
-window.viewWorkerLogs=(id)=>{
-  showAdminTab('logsTab',document.querySelectorAll('.tab')[3]);
-  const list=entries.filter(e=>e.workerId===id);
-  document.getElementById('entries').innerHTML=list.map(e=>`
-    <div class="table-row">
-      <span>${e.workerName}</span>
-      <span>${fmtDate(e.inTime)}</span>
-      <span>${fmtTime(e.inTime)}</span>
-      <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
-      <span>${hours(e).toFixed(2)}</span>
-      <span>${photoButtons(e)}</span>
-      ${e.editedAt?`<div class="audit" style="grid-column:1/-1">Edited by ${e.editedBy||'admin'} at ${new Date(e.editedAt).toLocaleString()}</div>`:''}
-    </div>
-  `).join('')||'<p class="muted">No logs</p>';
-}
-
-window.openEditEntry=(id)=>{
-  const e=entries.find(x=>x.id===id);if(!e)return;
-
-  document.getElementById('editEntryId').value=id;
-  document.getElementById('editDate').value=fmtDate(e.inTime);
-  document.getElementById('editIn').value=new Date(e.inTime).toTimeString().slice(0,5);
-  document.getElementById('editOut').value=e.outTime?new Date(e.outTime).toTimeString().slice(0,5):'';
-  document.getElementById('editBreak').value=e.breakMins||0;
-  document.getElementById('editModal').classList.add('open');
-}
-
-window.closeEditModal=()=>document.getElementById('editModal').classList.remove('open');
-
-window.saveEntryEdit=async()=>{
-  const id=document.getElementById('editEntryId').value;
-  const e=entries.find(x=>x.id===id);
-  if(!e)return;
-
-  const date=document.getElementById('editDate').value;
-  const inn=document.getElementById('editIn').value;
-  const out=document.getElementById('editOut').value;
-  const br=Number(document.getElementById('editBreak').value||0);
-
-  if(!date||!inn)return alert('Date and clock-in time are required.');
-
-  await F.updateDoc(entryDoc(id),{
-    originalInTime:e.originalInTime||e.inTime,
-    originalOutTime:e.originalOutTime||e.outTime||null,
-    inTime:new Date(date+'T'+inn).toISOString(),
-    outTime:out?new Date(date+'T'+out).toISOString():null,
-    breakMins:br,
-    status:out?'completed':'active',
-    editedBy:currentUser?.email||'admin',
-    editedAt:new Date().toISOString()
-  });
-
-  closeEditModal();
-}
-
-
-window.openEditWorker=(id)=>{
-  const w=workers.find(x=>x.id===id);
-  if(!w)return;
-  editWorkerProfilePhotoData=null;
-  document.getElementById('editWorkerId').value=id;
-  document.getElementById('editWorkerName').value=w.name||'';
-  document.getElementById('editWorkerPin').value=w.pin||'';
-  document.getElementById('editWorkerRate').value=Number(w.rate||0);
-  document.getElementById('editWorkerActive').value=(w.active===false?'false':'true');
-  const img=document.getElementById('editWorkerProfilePreview');
-  if(w.profilePhoto){img.src=w.profilePhoto;img.classList.remove('hidden')}else{img.src='';img.classList.add('hidden')}
-  document.getElementById('editWorkerModal').classList.add('open');
-}
-window.closeEditWorkerModal=()=>{
-  document.getElementById('editWorkerModal').classList.remove('open');
-  editWorkerProfilePhotoData=null;
-  const f=document.getElementById('editWorkerProfilePhoto');
-  if(f)f.value='';
-}
-window.saveWorkerProfile=async()=>{
-  const id=document.getElementById('editWorkerId').value;
-  if(!id)return;
-  const name=document.getElementById('editWorkerName').value.trim();
-  const pin=document.getElementById('editWorkerPin').value.trim();
-  const rate=Number(document.getElementById('editWorkerRate').value||0);
-  const active=document.getElementById('editWorkerActive').value==='true';
-  if(!name||!pin)return alert('Name and PIN are required.');
-  const data={name,pin,rate,active,updatedAt:new Date().toISOString(),updatedBy:currentUser?.email||'admin'};
-  if(editWorkerProfilePhotoData)data.profilePhoto=editWorkerProfilePhotoData;
-  await F.updateDoc(F.doc(db,'companies',currentCompanyId,'workers',id),data);
-  closeEditWorkerModal();
-}
-
-window.addWorker=async()=>{
+  const el=document.getElementById('entries');
+  if(!el)return;
   try{
-    const name=document.getElementById('workerName').value.trim();
-    const pin=document.getElementById('workerPin').value.trim();
-    const rate=Number(document.getElementById('workerRate').value||0);
-
-    if(!name||!pin)return alert('Add name and PIN');
-    if(!workerProfilePhotoData)return alert('Add a worker profile photo. This is needed for identity verification.');
-
-    const current=await F.getDocs(workersRef());
-    if(current.size>=Number(companySettings.workerLimit||10))return alert('Plan limit reached');
-
-    await F.addDoc(workersRef(),{
-      name,
-      pin,
-      rate,
-      profilePhoto:workerProfilePhotoData,
-      active:true,
-      createdAt:new Date().toISOString()
-    });
-
-    ['workerName','workerPin','workerRate'].forEach(id=>document.getElementById(id).value='');
-    const file=document.getElementById('workerProfilePhoto');
-    const img=document.getElementById('workerProfilePreview');
-    if(file)file.value='';
-    if(img){img.src='';img.classList.add('hidden')}
-    workerProfilePhotoData=null,editWorkerProfilePhotoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
-  }catch(e){alert('Add worker error: '+e.message)}
-}
-
-window.removeWorker=async(id)=>{
-  if(confirm('Remove this worker?'))await F.deleteDoc(F.doc(db,'companies',currentCompanyId,'workers',id));
-}
-
-window.setPlan=async(plan)=>{
-  const lim=PLAN_LIMITS[plan]||10;
-  companySettings={...companySettings,plan,workerLimit:lim};
-  await F.setDoc(companyRef(),{plan,workerLimit:lim,updatedAt:new Date().toISOString()},{merge:true});
-  renderDash();
-}
-
-window.saveSettings=async()=>{
-  const siteLat=Number(document.getElementById('siteLat').value);
-  const siteLng=Number(document.getElementById('siteLng').value);
-  const radiusMeters=Number(document.getElementById('siteRadius').value||150);
-
-  if(isNaN(siteLat)||isNaN(siteLng))return alert('Add valid latitude and longitude');
-
-  companySettings={...companySettings,siteLat,siteLng,radiusMeters};
-  await F.setDoc(companyRef(),{siteLat,siteLng,radiusMeters,updatedAt:new Date().toISOString()},{merge:true});
-  msg('settingsMsg','GPS settings saved','ok');
+    if(!Array.isArray(entries))entries=[];
+    const sorted=[...entries].sort((a,b)=>new Date(b.inTime||0)-new Date(a.inTime||0));
+    if(!sorted.length){
+      el.innerHTML='<p class="muted">No time logs yet.</p>';
+      return;
+    }
+    el.innerHTML=sorted.slice(0,80).map(e=>{
+      const w=workers.find(x=>x.id===e.workerId)||{};
+      const entryId=safeText(e.id||'');
+      const proof=e.photo||e.clockInPhoto||e.clockOutPhoto||'';
+      return `
+        <div class="table-row">
+          <span>${workerMiniPhotoHTML(w)}${safeText(w.name||'Worker')}</span>
+          <span>${fmtDate(e.inTime)}</span>
+          <span>${fmtTime(e.inTime)}</span>
+          <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
+          <span>${entryHoursLive(e).toFixed(2)}h</span>
+          <span>
+            ${proof?`<button onclick="viewPhoto('${entryId}')">Proof</button>`:''}
+            <button onclick="openEditEntry('${entryId}')">Edit</button>
+          </span>
+        </div>
+      `;
+    }).join('');
+  }catch(err){
+    console.error('renderEntries error:',err);
+    el.innerHTML='<p class="error">Time logs could not render.</p>';
+  }
 }
 
 function getPosition(){
