@@ -1,21 +1,18 @@
 <!doctype html>
 <html lang="en" translate="no" class="notranslate">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>BeeShift</title>
-<meta name="google" content="notranslate">
-<meta name="robots" content="notranslate">
-
-<meta name="theme-color" content="#1a1400">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="BeeShift">
-
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
-
-<style>
+  <head>
+    <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        <title>BeeShift</title>
+        <meta name="google" content="notranslate">
+          <meta name="robots" content="notranslate">
+            <meta name="theme-color" content="#1a1400">
+              <meta name="apple-mobile-web-app-capable" content="yes">
+                <meta name="apple-mobile-web-app-title" content="BeeShift">
+                  <link rel="manifest" href="manifest.webmanifest">
+                    <link rel="icon" href="logo.png">
+                      <link rel="apple-touch-icon" href="logo.png">
+                        <style>
 :root{
   --bg:#1a1400;
   --surface:#221c00;
@@ -342,310 +339,360 @@ main{animation:screenEnter .35s ease}
   .workerPdfRow .pdfBtn{width:100%;max-width:360px;margin:0 auto}
 }
 </style>
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="application-name" content="BeeShift">
-</head>
-
-<body>
-<div id="splashScreen">
-  <div class="splashInner">
-    <img src="logo.png" alt="BeeShift logo">
-    <div>BeeShift</div>
-  </div>
-</div>
-
-<button id="langToggleBtn" class="langBtn" onclick="toggleAppLang()">Español</button>
-
-<main id="setup" class="hidden">
-  <div class="brand"><img src="logo.png"><div>BeeShift</div></div>
-  <div class="card"><div id="setupMsg"></div></div>
-</main>
-
-<main id="home">
-  <div class="brand"><img src="logo.png"><div>BeeShift</div></div>
-  <div class="card">
-    <button class="homeBtn" onclick="openWorkerKioskStart()">👷 Worker Kiosk</button>
-    <button class="homeBtn" onclick="openAdminLogin()">🔐 Admin Login</button>
-    <button class="homeBtn smallLink" onclick="openCreateCompany()">➕ Create Company</button>
-    <p class="muted" style="text-align:center">Workers enter with company code + PIN. Admins enter with email + password.</p>
-  </div>
-</main>
-
-<main id="kioskStart" class="hidden">
-  <div class="brand"><img src="logo.png"><div>Worker Kiosk</div></div>
-  <div class="card">
-    <h3>Enter Company Code</h3>
-    <input id="kioskCompanyCode" placeholder="example: twin-shine">
-    <div class="row">
-      <button onclick="loadKioskCompany()">Continue</button>
-      <button class="smallLink" onclick="screen('home')">Back</button>
-    </div>
-    <div id="kioskStartMsg" class="error"></div>
-  </div>
-</main>
-
-<main id="login" class="hidden">
-  <div class="brand"><img src="logo.png"><div>Admin Login</div></div>
-  <div class="card">
-    <input id="email" placeholder="Admin email">
-    <input id="pass" type="password" placeholder="Password">
-    <input id="company" placeholder="Company code">
-    <div class="row">
-      <button onclick="login()">Login</button>
-      <button class="smallLink" onclick="screen('home')">Back</button>
-    </div>
-    <p class="muted">Only company owners/admins use this screen.</p>
-    <div id="authMsg" class="error"></div>
-  </div>
-</main>
-
-<main id="signup" class="hidden">
-  <div class="brand"><img src="logo.png"><div>Create Company</div></div>
-  <div class="card">
-    <input id="signupCompanyName" placeholder="Company name">
-    <input id="signupCompanyCode" placeholder="Company code, example: twin-shine">
-    <div class="codeHint">Company code is auto-generated from company name, but you can edit it.</div>
-    <div class="photoBox">
-      <input id="signupCompanyLogo" class="photoInput" type="file" accept="image/*">
-      <label for="signupCompanyLogo" class="photoBtn">🏢 Add Company Logo</label>
-      <div class="photoHint">This logo appears in the worker kiosk for this company.</div>
-      <img id="signupCompanyLogoPreview" class="companyLogoPreview hidden">
-    </div>
-    <input id="signupEmail" placeholder="Owner email">
-    <input id="signupPass" type="password" placeholder="Password">
-    <div class="row">
-      <button onclick="signup()">Create Company</button>
-      <button class="smallLink" onclick="screen('home')">Back</button>
-    </div>
-    <div id="signupMsg" class="error"></div>
-  </div>
-</main>
-
-<main id="admin" class="hidden">
-  <div class="top">
-    <div class="topTitle"><img src="logo.png">BeeShift Admin</div>
-    <button onclick="logout()">Logout</button>
-  </div>
-
-  <div class="card">
-    <div id="companyInfo" class="muted"></div>
-    <span class="pill" id="planBadge">Plan: Basic</span>
-    <span class="pill" id="companyStatusBadge">Active</span>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" onclick="showAdminTab('dashTab',this)">Dashboard</button>
-    <button class="tab" onclick="showAdminTab('workersTab',this)">Workers</button>
-    <button class="tab" onclick="showAdminTab('payrollTab',this)">Payroll</button>
-    <button class="tab" onclick="showAdminTab('logsTab',this)">Time Logs</button>
-    <button class="tab" onclick="showAdminTab('settingsTab',this)">Settings</button>
-  </div>
-
-  <section id="dashTab">
-    <div class="adminGrid" id="dash"></div>
-  </section>
-
-  <section id="workersTab" class="hidden">
-    <div class="card">
-      <h3>Add Worker</h3>
-      <input id="workerName" placeholder="Worker name">
-      <input id="workerPin" placeholder="PIN">
-      <input id="workerRate" type="number" placeholder="Hourly rate">
-      <div class="photoBox">
-        <input id="workerProfilePhoto" class="photoInput" type="file" accept="image/*" capture="user">
-        <label for="workerProfilePhoto" class="photoBtn">📸 Add Worker Profile Photo</label>
-        <div class="photoHint">This photo is used by admin to compare against clock-in photos.</div>
-        <img id="workerProfilePreview" class="photoPreview hidden">
-      </div>
-      <button onclick="addWorker()">Add Worker</button>
-    </div>
-    <div class="card"><h3>Workers</h3><div class="workerGrid" id="workers"></div></div>
-  </section>
-
-  <section id="payrollTab" class="hidden">
-    <div class="card">
-      <h3>Payroll</h3>
-      <button onclick="exportCSV()">Export Company CSV</button>
-      <div class="table-row"><b>Worker</b><b>Hours</b><b>Rate</b><b>Gross</b><b>Status</b><b>Action</b></div>
-      <div id="payroll"></div>
-    </div>
-  </section>
-
-  <section id="logsTab" class="hidden">
-    <div class="card">
-      <h3>All Time Logs</h3>
-      <div class="table-row"><b>Worker</b><b>Date</b><b>In</b><b>Out</b><b>Hours</b><b>Proof</b></div>
-      <div id="entries"></div>
-    </div>
-  </section>
-
-  <section id="settingsTab" class="hidden">
-    <div class="card">
-      <h3>Company Branding</h3>
-      <div id="currentCompanyLogoBox"></div>
-      <input id="companyDisplayName" placeholder="Company display name">
-      <div class="copyBox" id="companyCodeCopyBox"></div>
-      <button onclick="copyCompanyCode()">Copy Company Code</button>
-      <div class="photoBox">
-        <input id="settingsCompanyLogo" class="photoInput" type="file" accept="image/*">
-        <label for="settingsCompanyLogo" class="photoBtn">🏢 Replace Company Logo</label>
-        <div class="photoHint">Optional. This logo appears in the worker kiosk.</div>
-        <img id="settingsCompanyLogoPreview" class="companyLogoPreview hidden">
-      </div>
-      <button onclick="saveCompanyBranding()">Save Branding</button>
-      <div id="brandingMsg" class="muted"></div>
-    </div>
-
-    <div class="card">
-      <h3>GPS Lock Settings</h3>
-      <input id="siteLat" placeholder="Latitude">
-      <input id="siteLng" placeholder="Longitude">
-      <input id="siteRadius" type="number" placeholder="Radius meters">
-      <div class="row">
-        <button onclick="useMyLocationForSite()">Use My Location</button>
-        <button onclick="saveSettings()">Save Settings</button>
-      </div>
-      <div id="settingsMsg" class="muted"></div>
-    </div>
-
-    <div class="card">
-      <h3>Plans + Limits</h3>
-      <div class="row">
-        <button onclick="setPlan('basic')">Basic 10</button>
-        <button onclick="setPlan('premium')">Business 25</button>
-        <button onclick="setPlan('pro')">Pro 50</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Preview</h3>
-      <button onclick="screen('kiosk')">Preview Kiosk</button>
-    </div>
-
-    <div class="card" style="border-color:#ff5252">
-      <h3 class="error">Danger Zone</h3>
-      <p class="muted">This deactivates the company. Data stays saved for safety, but workers will be blocked from entering.</p>
-      <input id="deleteConfirm" placeholder="Type company code to confirm">
-      <button class="danger" onclick="deleteCompanyAccount()">Delete Company Account</button>
-    </div>
-  </section>
-</main>
-
-<main id="kiosk" class="hidden">
-  <div class="brand"><img src="logo.png"><div>BeeShift Kiosk</div></div>
-  <div class="card">
-    <div id="kioskCompanyLogo"></div><div id="kioskCompany" class="muted"></div>
-    <div class="row"><button class="smallLink" onclick="leaveKiosk()">Change Company</button></div>
-  </div>
-  <div class="card"><h3>Workers</h3><div id="kioskWorkers"></div><button class="smallLink" onclick="debugData()">🐞 Debug Data</button><div id="debugBox" class="muted" style="display:none;white-space:pre-wrap;word-break:break-word;background:#111;border-radius:12px;padding:10px;margin-top:8px"></div></div>
-</main>
-
-<main id="workerScreen" class="hidden">
-  <div class="top">
-    <div class="topTitle"><img src="logo.png">BeeShift</div>
-    <button onclick="backToKiosk()">Exit</button>
-  </div>
-
-  <div class="card">
-    <div id="activeWorkerProfile"></div><h2 id="activeWorkerName"></h2>
-    <div class="clock" id="liveClock">00:00:00</div>
-
-    <div class="earnGrid">
-      <div class="earnCard"><small>Today</small><b id="todayEarn">$0.00</b><span id="todayHours">0.00h</span></div>
-      <div class="earnCard"><small>This Week</small><b id="weekEarn">$0.00</b><span id="weekHours">0.00h</span></div>
-    </div>
-
-    <div class="liveStatsCard">
-      <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
-      <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
-      <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
-    </div>
-
-    <p>Status: <b id="workerStatus">Out</b></p>
-    <p id="gpsStatus" class="muted">GPS not checked</p>
-
-    <div class="photoBox">
-      <input id="clockPhoto" class="photoInput" type="file" accept="image/*" capture="user">
-      <label for="clockPhoto" class="photoBtn">📸 Take Required Clock Photo</label>
-      <div class="photoHint">Required only for Clock In and Clock Out</div>
-      <img id="photoPreview" class="photoPreview hidden">
-    </div>
-
-    <button id="smartClockBtn" class="bigClockBtn" onclick="smartClockAction()">Clock In</button>
-
-    <div class="row">
-      <button onclick="checkGPS()">Check GPS</button>
-      <button id="breakStartBtn" class="orange" onclick="startBreak()">Start Break</button>
-      <button id="breakEndBtn" class="green" onclick="endBreak()">End Break</button>
-    </div>
-
-    <div class="row workerPdfRow">
-      <button id="dailyPdfBtn" class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
-      <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
-    </div>
-
-    <p class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
-  </div>
-
-  <div class="card"><h3>My recent entries</h3><div id="myEntries"></div></div>
-</main>
-
-<div id="pinModal" class="modal">
-  <div class="modalBox" style="text-align:center">
-    <h2 id="pinWorkerName"></h2>
-    <input id="pinInput" inputmode="numeric" placeholder="PIN">
-    <button onclick="checkPin()">Enter</button>
-    <button onclick="closePin()">Cancel</button>
-    <div id="pinMsg" class="error"></div>
-  </div>
-</div>
-
-<div id="editModal" class="modal">
-  <div class="modalBox">
-    <h3>Edit Time Log</h3>
-    <input id="editEntryId" type="hidden">
-    <input id="editDate" type="date">
-    <input id="editIn" type="time">
-    <input id="editOut" type="time">
-    <input id="editBreak" type="number" placeholder="Break minutes">
-    <button onclick="saveEntryEdit()">Save Override</button>
-    <button class="smallLink" onclick="closeEditModal()">Cancel</button>
-  </div>
-</div>
-
-
-<div id="photoModal" class="modal">
-  <div class="modalBox" style="max-width:760px;text-align:center">
-    <h3 id="photoModalTitle">Verification Photo</h3>
-    <img id="photoModalImg" class="verifyImg" src="">
-    <div class="row"><button class="smallLink" onclick="closePhotoModal()">Close</button></div>
-  </div>
-</div>
-
-
-<div id="editWorkerModal" class="modal">
-  <div class="modalBox">
-    <h3 data-en="Edit Worker Profile" data-es="Editar Perfil del Trabajador">Edit Worker Profile</h3>
-    <input id="editWorkerId" type="hidden">
-    <input id="editWorkerName" placeholder="Worker name">
-    <input id="editWorkerPin" placeholder="PIN">
-    <input id="editWorkerRate" type="number" placeholder="Hourly rate">
-    <select id="editWorkerActive">
-      <option value="true">Active</option>
-      <option value="false">Inactive</option>
-    </select>
-    <div class="photoBox">
-      <input id="editWorkerProfilePhoto" class="photoInput" type="file" accept="image/*" capture="environment">
-      <label for="editWorkerProfilePhoto" class="photoBtn" data-en="📸 Replace Profile Photo" data-es="📸 Cambiar Foto de Perfil">📸 Replace Profile Photo</label>
-      <div class="photoHint" data-en="Optional. Leave empty to keep current photo." data-es="Opcional. Déjalo vacío para mantener la foto actual.">Optional. Leave empty to keep current photo.</div>
-      <img id="editWorkerProfilePreview" class="workerEditPhotoPreview hidden">
-    </div>
-    <button onclick="saveWorkerProfile()" data-en="Save Worker" data-es="Guardar Trabajador">Save Worker</button>
-    <button class="smallLink" onclick="closeEditWorkerModal()" data-en="Cancel" data-es="Cancelar">Cancel</button>
-  </div>
-</div>
-
-<script type="module">
+                        <meta name="mobile-web-app-capable" content="yes">
+                          <meta name="application-name" content="BeeShift">
+                          </head>
+                          <body>
+                            <div id="splashScreen">
+                              <div class="splashInner">
+                                <img src="logo.png" alt="BeeShift logo">
+                                  <div>BeeShift</div>
+                                </div>
+                              </div>
+                              <button id="langToggleBtn" class="langBtn" onclick="toggleAppLang()">Español</button>
+                              <main id="setup" class="hidden">
+                                <div class="brand">
+                                  <img src="logo.png">
+                                    <div>BeeShift</div>
+                                  </div>
+                                  <div class="card">
+                                    <div id="setupMsg">
+                                    </div>
+                                  </div>
+                                </main>
+                                <main id="home">
+                                  <div class="brand">
+                                    <img src="logo.png">
+                                      <div>BeeShift</div>
+                                    </div>
+                                    <div class="card">
+                                      <button class="homeBtn" onclick="openWorkerKioskStart()">👷 Worker Kiosk</button>
+                                      <button class="homeBtn" onclick="openAdminLogin()">🔐 Admin Login</button>
+                                      <button class="homeBtn smallLink" onclick="openCreateCompany()">➕ Create Company</button>
+                                      <p class="muted" style="text-align:center">Workers enter with company code + PIN. Admins enter with email + password.</p>
+                                    </div>
+                                  </main>
+                                  <main id="kioskStart" class="hidden">
+                                    <div class="brand">
+                                      <img src="logo.png">
+                                        <div>Worker Kiosk</div>
+                                      </div>
+                                      <div class="card">
+                                        <h3>Enter Company Code</h3>
+                                        <input id="kioskCompanyCode" placeholder="example: twin-shine">
+                                          <div class="row">
+                                            <button onclick="loadKioskCompany()">Continue</button>
+                                            <button class="smallLink" onclick="screen('home')">Back</button>
+                                          </div>
+                                          <div id="kioskStartMsg" class="error">
+                                          </div>
+                                        </div>
+                                      </main>
+                                      <main id="login" class="hidden">
+                                        <div class="brand">
+                                          <img src="logo.png">
+                                            <div>Admin Login</div>
+                                          </div>
+                                          <div class="card">
+                                            <input id="email" placeholder="Admin email">
+                                              <input id="pass" type="password" placeholder="Password">
+                                                <input id="company" placeholder="Company code">
+                                                  <div class="row">
+                                                    <button onclick="login()">Login</button>
+                                                    <button class="smallLink" onclick="screen('home')">Back</button>
+                                                  </div>
+                                                  <p class="muted">Only company owners/admins use this screen.</p>
+                                                  <div id="authMsg" class="error">
+                                                  </div>
+                                                </div>
+                                              </main>
+                                              <main id="signup" class="hidden">
+                                                <div class="brand">
+                                                  <img src="logo.png">
+                                                    <div>Create Company</div>
+                                                  </div>
+                                                  <div class="card">
+                                                    <input id="signupCompanyName" placeholder="Company name">
+                                                      <input id="signupCompanyCode" placeholder="Company code, example: twin-shine">
+                                                        <div class="codeHint">Company code is auto-generated from company name, but you can edit it.</div>
+                                                        <div class="photoBox">
+                                                          <input id="signupCompanyLogo" class="photoInput" type="file" accept="image/*">
+                                                            <label for="signupCompanyLogo" class="photoBtn">🏢 Add Company Logo</label>
+                                                            <div class="photoHint">This logo appears in the worker kiosk for this company.</div>
+                                                            <img id="signupCompanyLogoPreview" class="companyLogoPreview hidden">
+                                                            </div>
+                                                            <input id="signupEmail" placeholder="Owner email">
+                                                              <input id="signupPass" type="password" placeholder="Password">
+                                                                <div class="row">
+                                                                  <button onclick="signup()">Create Company</button>
+                                                                  <button class="smallLink" onclick="screen('home')">Back</button>
+                                                                </div>
+                                                                <div id="signupMsg" class="error">
+                                                                </div>
+                                                              </div>
+                                                            </main>
+                                                            <main id="admin" class="hidden">
+                                                              <div class="top">
+                                                                <div class="topTitle">
+                                                                  <img src="logo.png">BeeShift Admin</div>
+                                                                  <button onclick="logout()">Logout</button>
+                                                                </div>
+                                                                <div class="card">
+                                                                  <div id="companyInfo" class="muted">
+                                                                  </div>
+                                                                  <span class="pill" id="planBadge">Plan: Basic</span>
+                                                                  <span class="pill" id="companyStatusBadge">Active</span>
+                                                                </div>
+                                                                <div class="tabs">
+                                                                  <button class="tab active" onclick="showAdminTab('dashTab',this)">Dashboard</button>
+                                                                  <button class="tab" onclick="showAdminTab('workersTab',this)">Workers</button>
+                                                                  <button class="tab" onclick="showAdminTab('payrollTab',this)">Payroll</button>
+                                                                  <button class="tab" onclick="showAdminTab('logsTab',this)">Time Logs</button>
+                                                                  <button class="tab" onclick="showAdminTab('settingsTab',this)">Settings</button>
+                                                                </div>
+                                                                <section id="dashTab">
+                                                                  <div class="adminGrid" id="dash">
+                                                                  </div>
+                                                                </section>
+                                                                <section id="workersTab" class="hidden">
+                                                                  <div class="card">
+                                                                    <h3>Add Worker</h3>
+                                                                    <input id="workerName" placeholder="Worker name">
+                                                                      <input id="workerPin" placeholder="PIN">
+                                                                        <input id="workerRate" type="number" placeholder="Hourly rate">
+                                                                          <div class="photoBox">
+                                                                            <input id="workerProfilePhoto" class="photoInput" type="file" accept="image/*" capture="user">
+                                                                              <label for="workerProfilePhoto" class="photoBtn">📸 Add Worker Profile Photo</label>
+                                                                              <div class="photoHint">This photo is used by admin to compare against clock-in photos.</div>
+                                                                              <img id="workerProfilePreview" class="photoPreview hidden">
+                                                                              </div>
+                                                                              <button onclick="addWorker()">Add Worker</button>
+                                                                            </div>
+                                                                            <div class="card">
+                                                                              <h3>Workers</h3>
+                                                                              <div class="workerGrid" id="workers">
+                                                                              </div>
+                                                                            </div>
+                                                                          </section>
+                                                                          <section id="payrollTab" class="hidden">
+                                                                            <div class="card">
+                                                                              <h3>Payroll</h3>
+                                                                              <button onclick="exportCSV()">Export Company CSV</button>
+                                                                              <div class="table-row">
+                                                                                <b>Worker</b>
+                                                                                <b>Hours</b>
+                                                                                <b>Rate</b>
+                                                                                <b>Gross</b>
+                                                                                <b>Status</b>
+                                                                                <b>Action</b>
+                                                                              </div>
+                                                                              <div id="payroll">
+                                                                              </div>
+                                                                            </div>
+                                                                          </section>
+                                                                          <section id="logsTab" class="hidden">
+                                                                            <div class="card">
+                                                                              <h3>All Time Logs</h3>
+                                                                              <div class="table-row">
+                                                                                <b>Worker</b>
+                                                                                <b>Date</b>
+                                                                                <b>In</b>
+                                                                                <b>Out</b>
+                                                                                <b>Hours</b>
+                                                                                <b>Proof</b>
+                                                                              </div>
+                                                                              <div id="entries">
+                                                                              </div>
+                                                                            </div>
+                                                                          </section>
+                                                                          <section id="settingsTab" class="hidden">
+                                                                            <div class="card">
+                                                                              <h3>Company Branding</h3>
+                                                                              <div id="currentCompanyLogoBox">
+                                                                              </div>
+                                                                              <input id="companyDisplayName" placeholder="Company display name">
+                                                                                <div class="copyBox" id="companyCodeCopyBox">
+                                                                                </div>
+                                                                                <button onclick="copyCompanyCode()">Copy Company Code</button>
+                                                                                <div class="photoBox">
+                                                                                  <input id="settingsCompanyLogo" class="photoInput" type="file" accept="image/*">
+                                                                                    <label for="settingsCompanyLogo" class="photoBtn">🏢 Replace Company Logo</label>
+                                                                                    <div class="photoHint">Optional. This logo appears in the worker kiosk.</div>
+                                                                                    <img id="settingsCompanyLogoPreview" class="companyLogoPreview hidden">
+                                                                                    </div>
+                                                                                    <button onclick="saveCompanyBranding()">Save Branding</button>
+                                                                                    <div id="brandingMsg" class="muted">
+                                                                                    </div>
+                                                                                  </div>
+                                                                                  <div class="card">
+                                                                                    <h3>GPS Lock Settings</h3>
+                                                                                    <input id="siteLat" placeholder="Latitude">
+                                                                                      <input id="siteLng" placeholder="Longitude">
+                                                                                        <input id="siteRadius" type="number" placeholder="Radius meters">
+                                                                                          <div class="row">
+                                                                                            <button onclick="useMyLocationForSite()">Use My Location</button>
+                                                                                            <button onclick="saveSettings()">Save Settings</button>
+                                                                                          </div>
+                                                                                          <div id="settingsMsg" class="muted">
+                                                                                          </div>
+                                                                                        </div>
+                                                                                        <div class="card">
+                                                                                          <h3>Plans + Limits</h3>
+                                                                                          <div class="row">
+                                                                                            <button onclick="setPlan('basic')">Basic 10</button>
+                                                                                            <button onclick="setPlan('premium')">Business 25</button>
+                                                                                            <button onclick="setPlan('pro')">Pro 50</button>
+                                                                                          </div>
+                                                                                        </div>
+                                                                                        <div class="card">
+                                                                                          <h3>Preview</h3>
+                                                                                          <button onclick="screen('kiosk')">Preview Kiosk</button>
+                                                                                        </div>
+                                                                                        <div class="card" style="border-color:#ff5252">
+                                                                                          <h3 class="error">Danger Zone</h3>
+                                                                                          <p class="muted">This deactivates the company. Data stays saved for safety, but workers will be blocked from entering.</p>
+                                                                                          <input id="deleteConfirm" placeholder="Type company code to confirm">
+                                                                                            <button class="danger" onclick="deleteCompanyAccount()">Delete Company Account</button>
+                                                                                          </div>
+                                                                                        </section>
+                                                                                      </main>
+                                                                                      <main id="kiosk" class="hidden">
+                                                                                        <div class="brand">
+                                                                                          <img src="logo.png">
+                                                                                            <div>BeeShift Kiosk</div>
+                                                                                          </div>
+                                                                                          <div class="card">
+                                                                                            <div id="kioskCompanyLogo">
+                                                                                            </div>
+                                                                                            <div id="kioskCompany" class="muted">
+                                                                                            </div>
+                                                                                            <div class="row">
+                                                                                              <button class="smallLink" onclick="leaveKiosk()">Change Company</button>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          <div class="card">
+                                                                                            <h3>Workers</h3>
+                                                                                            <div id="kioskWorkers">
+                                                                                            </div>
+                                                                                            <button class="smallLink" onclick="forceRenderKioskWorkers()">Reload Workers</button>
+                                                                                            <button class="smallLink" onclick="debugData()">🐞 Debug Data</button>
+                                                                                            <div id="debugBox" class="muted" style="display:none;white-space:pre-wrap;word-break:break-word;background:#111;border-radius:12px;padding:10px;margin-top:8px">
+                                                                                            </div>
+                                                                                          </div>
+                                                                                        </main>
+                                                                                        <main id="workerScreen" class="hidden">
+                                                                                          <div class="top">
+                                                                                            <div class="topTitle">
+                                                                                              <img src="logo.png">BeeShift</div>
+                                                                                              <button onclick="backToKiosk()">Exit</button>
+                                                                                            </div>
+                                                                                            <div class="card">
+                                                                                              <div id="activeWorkerProfile">
+                                                                                              </div>
+                                                                                              <h2 id="activeWorkerName">
+                                                                                              </h2>
+                                                                                              <div class="clock" id="liveClock">00:00:00</div>
+                                                                                              <div class="earnGrid">
+                                                                                                <div class="earnCard">
+                                                                                                  <small>Today</small>
+                                                                                                  <b id="todayEarn">$0.00</b>
+                                                                                                  <span id="todayHours">0.00h</span>
+                                                                                                </div>
+                                                                                                <div class="earnCard">
+                                                                                                  <small>This Week</small>
+                                                                                                  <b id="weekEarn">$0.00</b>
+                                                                                                  <span id="weekHours">0.00h</span>
+                                                                                                </div>
+                                                                                              </div>
+                                                                                              <div class="liveStatsCard">
+                                                                                                <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b>
+                                                                                              </p>
+                                                                                              <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b>
+                                                                                            </p>
+                                                                                            <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b>
+                                                                                          </p>
+                                                                                        </div>
+                                                                                        <p>Status: <b id="workerStatus">Out</b>
+                                                                                      </p>
+                                                                                      <p id="gpsStatus" class="muted">GPS not checked</p>
+                                                                                      <div class="photoBox">
+                                                                                        <input id="clockPhoto" class="photoInput" type="file" accept="image/*" capture="user">
+                                                                                          <label for="clockPhoto" class="photoBtn">📸 Take Required Clock Photo</label>
+                                                                                          <div class="photoHint">Required only for Clock In and Clock Out</div>
+                                                                                          <img id="photoPreview" class="photoPreview hidden">
+                                                                                          </div>
+                                                                                          <button id="smartClockBtn" class="bigClockBtn" onclick="smartClockAction()">Clock In</button>
+                                                                                          <div class="row">
+                                                                                            <button onclick="checkGPS()">Check GPS</button>
+                                                                                            <button id="breakStartBtn" class="orange" onclick="startBreak()">Start Break</button>
+                                                                                            <button id="breakEndBtn" class="green" onclick="endBreak()">End Break</button>
+                                                                                          </div>
+                                                                                          <div class="row workerPdfRow">
+                                                                                            <button id="dailyPdfBtn" class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
+                                                                                            <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
+                                                                                          </div>
+                                                                                          <p class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
+                                                                                        </div>
+                                                                                        <div class="card">
+                                                                                          <h3>My recent entries</h3>
+                                                                                          <div id="myEntries">
+                                                                                          </div>
+                                                                                        </div>
+                                                                                      </main>
+                                                                                      <div id="pinModal" class="modal">
+                                                                                        <div class="modalBox" style="text-align:center">
+                                                                                          <h2 id="pinWorkerName">
+                                                                                          </h2>
+                                                                                          <input id="pinInput" inputmode="numeric" placeholder="PIN">
+                                                                                            <button onclick="checkPin()">Enter</button>
+                                                                                            <button onclick="closePin()">Cancel</button>
+                                                                                            <div id="pinMsg" class="error">
+                                                                                            </div>
+                                                                                          </div>
+                                                                                        </div>
+                                                                                        <div id="editModal" class="modal">
+                                                                                          <div class="modalBox">
+                                                                                            <h3>Edit Time Log</h3>
+                                                                                            <input id="editEntryId" type="hidden">
+                                                                                              <input id="editDate" type="date">
+                                                                                                <input id="editIn" type="time">
+                                                                                                  <input id="editOut" type="time">
+                                                                                                    <input id="editBreak" type="number" placeholder="Break minutes">
+                                                                                                      <button onclick="saveEntryEdit()">Save Override</button>
+                                                                                                      <button class="smallLink" onclick="closeEditModal()">Cancel</button>
+                                                                                                    </div>
+                                                                                                  </div>
+                                                                                                  <div id="photoModal" class="modal">
+                                                                                                    <div class="modalBox" style="max-width:760px;text-align:center">
+                                                                                                      <h3 id="photoModalTitle">Verification Photo</h3>
+                                                                                                      <img id="photoModalImg" class="verifyImg" src="">
+                                                                                                        <div class="row">
+                                                                                                          <button class="smallLink" onclick="closePhotoModal()">Close</button>
+                                                                                                        </div>
+                                                                                                      </div>
+                                                                                                    </div>
+                                                                                                    <div id="editWorkerModal" class="modal">
+                                                                                                      <div class="modalBox">
+                                                                                                        <h3 data-en="Edit Worker Profile" data-es="Editar Perfil del Trabajador">Edit Worker Profile</h3>
+                                                                                                        <input id="editWorkerId" type="hidden">
+                                                                                                          <input id="editWorkerName" placeholder="Worker name">
+                                                                                                            <input id="editWorkerPin" placeholder="PIN">
+                                                                                                              <input id="editWorkerRate" type="number" placeholder="Hourly rate">
+                                                                                                                <select id="editWorkerActive">
+                                                                                                                  <option value="true">Active</option>
+                                                                                                                  <option value="false">Inactive</option>
+                                                                                                                </select>
+                                                                                                                <div class="photoBox">
+                                                                                                                  <input id="editWorkerProfilePhoto" class="photoInput" type="file" accept="image/*" capture="environment">
+                                                                                                                    <label for="editWorkerProfilePhoto" class="photoBtn" data-en="📸 Replace Profile Photo" data-es="📸 Cambiar Foto de Perfil">📸 Replace Profile Photo</label>
+                                                                                                                    <div class="photoHint" data-en="Optional. Leave empty to keep current photo." data-es="Opcional. Déjalo vacío para mantener la foto actual.">Optional. Leave empty to keep current photo.</div>
+                                                                                                                    <img id="editWorkerProfilePreview" class="workerEditPhotoPreview hidden">
+                                                                                                                    </div>
+                                                                                                                    <button onclick="saveWorkerProfile()" data-en="Save Worker" data-es="Guardar Trabajador">Save Worker</button>
+                                                                                                                    <button class="smallLink" onclick="closeEditWorkerModal()" data-en="Cancel" data-es="Cancelar">Cancel</button>
+                                                                                                                  </div>
+                                                                                                                </div>
+                                                                                                                <script type="module">
 const firebaseConfig={
   apiKey:"AIzaSyCdBWbKFbfxLP_5q5EzbUBt7IrStvI5jLc",
   authDomain:"beeshift-pro.firebaseapp.com",
@@ -668,6 +715,7 @@ function screen(id){
 window.screen=screen;
 
 function debugData(){
+  setTimeout(forceRenderKioskWorkers,50);
   const text='COMPANY: '+currentCompanyId+
     '\nWORKERS: '+(Array.isArray(workers)?workers.length:'not array')+
     '\nENTRIES: '+(Array.isArray(entries)?entries.length:'not array')+
@@ -955,9 +1003,9 @@ function isThisWeek(e){return new Date(e.inTime)>=weekStart()}
 
 function renderAll(){
   const renders=[
+    ['renderDash',()=>renderDash()],
     ['renderWorkers',()=>renderWorkers()],
     ['renderKiosk',()=>renderKiosk()],
-    ['renderDash',()=>renderDash()],
     ['renderPayroll',()=>renderPayroll()],
     ['renderEntries',()=>renderEntries()],
     ['renderWorkerScreen',()=>renderWorkerScreen()]
@@ -965,6 +1013,7 @@ function renderAll(){
   renders.forEach(([name,fn])=>{
     try{fn()}catch(err){console.error(name+' failed:',err)}
   });
+  setTimeout(()=>{try{renderKiosk()}catch(e){}},100);
 }
 function formatDurationMs(ms){
   let total=Math.max(0,Math.floor(ms/1000));
@@ -1486,5 +1535,5 @@ if('serviceWorker' in navigator){
 
 init();
 </script>
-</body>
-</html>
+                                                                                                              </body>
+                                                                                                            </html>
