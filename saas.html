@@ -290,6 +290,7 @@ button:disabled{opacity:.35;cursor:not-allowed}
   align-items: center;
   justify-content: center;
   animation: splashHide 1.8s ease forwards;
+  pointer-events: none;
 }
 .splashInner {text-align:center;animation:splashLogo 1.4s ease forwards}
 .splashInner img {
@@ -385,7 +386,7 @@ main{animation:screenEnter .35s ease}
     <input id="kioskCompanyCode" placeholder="example: twin-shine">
     <div class="row">
       <button onclick="loadKioskCompany()">Continue</button>
-      <button class="smallLink" onclick="screen('home')">Back</button>
+      <button class="smallLink" onclick="showScreen('home')">Back</button>
     </div>
     <div id="kioskStartMsg" class="error"></div>
   </div>
@@ -399,7 +400,7 @@ main{animation:screenEnter .35s ease}
     <input id="company" placeholder="Company code">
     <div class="row">
       <button onclick="login()">Login</button>
-      <button class="smallLink" onclick="screen('home')">Back</button>
+      <button class="smallLink" onclick="showScreen('home')">Back</button>
     </div>
     <p class="muted">Only company owners/admins use this screen.</p>
     <div id="authMsg" class="error"></div>
@@ -422,7 +423,7 @@ main{animation:screenEnter .35s ease}
     <input id="signupPass" type="password" placeholder="Password">
     <div class="row">
       <button onclick="signup()">Create Company</button>
-      <button class="smallLink" onclick="screen('home')">Back</button>
+      <button class="smallLink" onclick="showScreen('home')">Back</button>
     </div>
     <div id="signupMsg" class="error"></div>
   </div>
@@ -535,7 +536,7 @@ main{animation:screenEnter .35s ease}
 
     <div class="card">
       <h3>Preview</h3>
-      <button onclick="screen('kiosk')">Preview Kiosk</button>
+      <button onclick="showScreen('kiosk')">Preview Kiosk</button>
     </div>
 
     <div class="card" style="border-color:#ff5252">
@@ -677,11 +678,11 @@ let companySettings={plan:'basic',workerLimit:10,radiusMeters:150,status:'active
 let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,currentPhotoData=null,workerProfilePhotoData=null,editWorkerProfilePhotoData=null,signupCompanyLogoData=null,settingsCompanyLogoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
 let clockBusy=false,unsubW=null,unsubE=null;
 
-function screen(id){
+function showScreen(id){
   ['setup','home','kioskStart','login','signup','admin','kiosk','workerScreen'].forEach(x=>document.getElementById(x).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
-window.screen=screen;
+window.showScreen=showScreen;
 
 function safeText(v, fallback=''){
   return String(v ?? fallback).replace(/[&<>"']/g, m => ({
@@ -880,10 +881,10 @@ function entryDoc(id){return F.doc(db,'companies',currentCompanyId,'entries',id)
 
 window.openWorkerKioskStart=()=>{
   document.getElementById('kioskCompanyCode').value=localStorage.getItem('lastKioskCompany')||'';
-  screen('kioskStart');
+  showScreen('kioskStart');
 }
-window.openAdminLogin=()=>screen('login');
-window.openCreateCompany=()=>screen('signup');
+window.openAdminLogin=()=>showScreen('login');
+window.openCreateCompany=()=>showScreen('signup');
 
 async function init(){
   applyLang();
@@ -903,10 +904,10 @@ async function init(){
         try{await loadKioskCompanyByCode(directCompany);return}catch(e){console.warn(e)}
       }
       if(u){await loadUserCompany(u);startApp()}
-      else screen('home');
+      else showScreen('home');
     });
   }catch(e){
-    screen('setup');
+    showScreen('setup');
     msg('setupMsg','Firebase error: '+e.message);
   }
 }
@@ -971,7 +972,7 @@ window.login=async()=>{
   }catch(e){msg('authMsg',e.message)}
 }
 
-window.logout=()=>F.signOut(auth).then(()=>{stopListeners();screen('home')});
+window.logout=()=>F.signOut(auth).then(()=>{stopListeners();showScreen('home')});
 
 function stopListeners(){
   if(unsubW)unsubW();
@@ -992,7 +993,7 @@ async function loadKioskCompanyByCode(code){
   document.getElementById('kioskCompany').innerHTML=`Company: <b>${currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
   renderCompanyBranding();
   listenData();
-  screen('kiosk');
+  showScreen('kiosk');
 }
 
 window.loadKioskCompany=async()=>{
@@ -1007,7 +1008,7 @@ window.loadKioskCompany=async()=>{
 window.leaveKiosk=()=>{
   stopListeners();
   selectedWorker=null;
-  screen('kioskStart');
+  showScreen('kioskStart');
 }
 
 function startApp(){
@@ -1019,7 +1020,7 @@ function startApp(){
   document.getElementById('siteRadius').value=companySettings.radiusMeters||150;
   renderCompanyBranding();
   listenData();
-  screen('admin');
+  showScreen('admin');
 }
 
 function listenData(){
@@ -1253,3 +1254,761 @@ function renderEntries(){
 }
 
 
+
+
+
+/* =====================================================================
+   PHOTO INPUT HANDLERS — convert files to compressed data URLs
+   ===================================================================== */
+function compressImage(file, maxDim=900, quality=0.82){
+  return new Promise((resolve,reject)=>{
+    if(!file)return reject(new Error('No file'));
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        let {width,height}=img;
+        if(width>height && width>maxDim){height=Math.round(height*maxDim/width);width=maxDim;}
+        else if(height>maxDim){width=Math.round(width*maxDim/height);height=maxDim;}
+        const c=document.createElement('canvas');
+        c.width=width;c.height=height;
+        c.getContext('2d').drawImage(img,0,0,width,height);
+        try{resolve(c.toDataURL('image/jpeg',quality));}catch(e){reject(e);}
+      };
+      img.onerror=()=>reject(new Error('Could not read image'));
+      img.src=fr.result;
+    };
+    fr.onerror=()=>reject(fr.error||new Error('File read error'));
+    fr.readAsDataURL(file);
+  });
+}
+
+function bindPhotoInput(inputId, previewId, setter){
+  const input=document.getElementById(inputId);
+  const preview=previewId?document.getElementById(previewId):null;
+  if(!input)return;
+  input.addEventListener('change',async e=>{
+    const file=e.target.files && e.target.files[0];
+    if(!file)return;
+    try{
+      const data=await compressImage(file);
+      setter(data);
+      if(preview){preview.src=data;preview.classList.remove('hidden');}
+    }catch(err){alert('Photo error: '+err.message);}
+  });
+}
+
+bindPhotoInput('clockPhoto','photoPreview',v=>{currentPhotoData=v;});
+bindPhotoInput('workerProfilePhoto','workerProfilePreview',v=>{workerProfilePhotoData=v;});
+bindPhotoInput('editWorkerProfilePhoto','editWorkerProfilePreview',v=>{editWorkerProfilePhotoData=v;});
+bindPhotoInput('signupCompanyLogo','signupCompanyLogoPreview',v=>{signupCompanyLogoData=v;});
+bindPhotoInput('settingsCompanyLogo','settingsCompanyLogoPreview',v=>{settingsCompanyLogoData=v;});
+
+
+/* =====================================================================
+   ENTER-KEY SHORTCUTS (mobile/desktop friendliness)
+   ===================================================================== */
+function bindEnter(inputId, fn){
+  const el=document.getElementById(inputId);
+  if(!el)return;
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fn();}});
+}
+bindEnter('pinInput',()=>checkPin());
+bindEnter('pass',()=>login());
+bindEnter('signupPass',()=>signup());
+bindEnter('kioskCompanyCode',()=>loadKioskCompany());
+
+
+/* =====================================================================
+   WORKER MANAGEMENT (admin)
+   ===================================================================== */
+window.addWorker=async()=>{
+  const name=document.getElementById('workerName').value.trim();
+  const pin=document.getElementById('workerPin').value.trim();
+  const rate=Number(document.getElementById('workerRate').value)||0;
+  if(!name||!pin)return alert('Name and PIN are required.');
+
+  const limit=Number(companySettings.workerLimit||PLAN_LIMITS[companySettings.plan||'basic']||10);
+  if(workers.length>=limit)return alert('Worker limit reached ('+limit+'). Upgrade your plan to add more workers.');
+
+  if(workers.some(w=>String(w.pin)===String(pin)))return alert('That PIN is already used by another worker.');
+
+  try{
+    const data={
+      name,pin,rate,active:true,
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+    if(workerProfilePhotoData)data.profilePhoto=workerProfilePhotoData;
+    await F.addDoc(workersRef(),data);
+
+    document.getElementById('workerName').value='';
+    document.getElementById('workerPin').value='';
+    document.getElementById('workerRate').value='';
+    const fileInput=document.getElementById('workerProfilePhoto');
+    if(fileInput)fileInput.value='';
+    const preview=document.getElementById('workerProfilePreview');
+    if(preview){preview.src='';preview.classList.add('hidden');}
+    workerProfilePhotoData=null;
+  }catch(e){alert('Failed to add worker: '+e.message);}
+};
+
+window.removeWorker=async(id)=>{
+  const w=workers.find(x=>x.id===id);
+  if(!w)return;
+  if(!confirm('Remove worker "'+(w.name||'')+'"? This cannot be undone.'))return;
+  try{
+    await F.deleteDoc(F.doc(db,'companies',currentCompanyId,'workers',id));
+  }catch(e){alert('Failed to remove worker: '+e.message);}
+};
+
+let workerLogsFilter=null;
+window.viewWorkerLogs=(id)=>{
+  const w=workers.find(x=>x.id===id);
+  if(!w)return;
+  workerLogsFilter=id;
+  const tabBtn=document.querySelector('.tab[onclick*="logsTab"]');
+  if(tabBtn)tabBtn.click();
+  applyLogsFilter();
+};
+function applyLogsFilter(){
+  if(!workerLogsFilter)return;
+  const el=document.getElementById('entries');
+  if(!el)return;
+  const filtered=entries.filter(e=>e.workerId===workerLogsFilter);
+  const w=workers.find(x=>x.id===workerLogsFilter);
+  el.innerHTML='<p class="muted">Showing only: <b>'+(w?.name||'Worker')+'</b> · <a href="#" onclick="clearLogsFilter();return false;" style="color:var(--accent)">Show all</a></p>'
+    +(filtered.map(e=>`
+      <div class="table-row">
+        <span>${safeText(e.workerName||w?.name||'Worker')}</span>
+        <span>${fmtDate(e.inTime)}</span>
+        <span>${fmtTime(e.inTime)}</span>
+        <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
+        <span>${entryHoursLive(e).toFixed(2)}</span>
+        <span>${photoButtons(e)}</span>
+      </div>
+    `).join('')||'<p class="muted">No entries for this worker</p>');
+}
+window.clearLogsFilter=()=>{workerLogsFilter=null;renderEntries();};
+
+window.openEditWorker=(id)=>{
+  const w=workers.find(x=>x.id===id);
+  if(!w)return;
+  document.getElementById('editWorkerId').value=id;
+  document.getElementById('editWorkerName').value=w.name||'';
+  document.getElementById('editWorkerPin').value=w.pin||'';
+  document.getElementById('editWorkerRate').value=w.rate||0;
+  document.getElementById('editWorkerActive').value=w.active===false?'false':'true';
+  const preview=document.getElementById('editWorkerProfilePreview');
+  if(preview){
+    if(w.profilePhoto){preview.src=w.profilePhoto;preview.classList.remove('hidden');}
+    else{preview.src='';preview.classList.add('hidden');}
+  }
+  editWorkerProfilePhotoData=null;
+  const fileInput=document.getElementById('editWorkerProfilePhoto');
+  if(fileInput)fileInput.value='';
+  document.getElementById('editWorkerModal').classList.add('open');
+};
+
+window.closeEditWorkerModal=()=>{
+  document.getElementById('editWorkerModal').classList.remove('open');
+  editWorkerProfilePhotoData=null;
+};
+
+window.saveWorkerProfile=async()=>{
+  const id=document.getElementById('editWorkerId').value;
+  if(!id)return;
+  const name=document.getElementById('editWorkerName').value.trim();
+  const pin=document.getElementById('editWorkerPin').value.trim();
+  const rate=Number(document.getElementById('editWorkerRate').value)||0;
+  const active=document.getElementById('editWorkerActive').value==='true';
+  if(!name||!pin)return alert('Name and PIN required.');
+  if(workers.some(w=>w.id!==id && String(w.pin)===String(pin)))return alert('That PIN is already used by another worker.');
+  try{
+    const data={name,pin,rate,active,updatedAt:new Date().toISOString()};
+    if(editWorkerProfilePhotoData)data.profilePhoto=editWorkerProfilePhotoData;
+    await F.updateDoc(F.doc(db,'companies',currentCompanyId,'workers',id),data);
+    closeEditWorkerModal();
+  }catch(e){alert('Failed to save: '+e.message);}
+};
+
+
+/* =====================================================================
+   KIOSK PIN FLOW
+   ===================================================================== */
+window.openPin=(workerId)=>{
+  const w=workers.find(x=>x.id===workerId);
+  if(!w)return;
+  if(w.active===false)return alert('This worker is inactive.');
+  pinWorker=w;
+  document.getElementById('pinWorkerName').textContent=w.name||'Worker';
+  document.getElementById('pinInput').value='';
+  document.getElementById('pinMsg').textContent='';
+  document.getElementById('pinModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pinInput')?.focus(),120);
+};
+
+window.closePin=()=>{
+  document.getElementById('pinModal').classList.remove('open');
+  pinWorker=null;
+};
+
+window.checkPin=()=>{
+  if(!pinWorker)return;
+  const entered=document.getElementById('pinInput').value.trim();
+  if(entered!==String(pinWorker.pin)){
+    msg('pinMsg','Wrong PIN','error');
+    return;
+  }
+  selectedWorker=pinWorker;
+  closePin();
+  showScreen('workerScreen');
+  renderWorkerScreen();
+};
+
+window.backToKiosk=()=>{
+  selectedWorker=null;
+  currentPhotoData=null;
+  currentGPS=null;
+  const photoInput=document.getElementById('clockPhoto');
+  if(photoInput)photoInput.value='';
+  const preview=document.getElementById('photoPreview');
+  if(preview){preview.src='';preview.classList.add('hidden');}
+  showScreen('kiosk');
+};
+
+
+/* =====================================================================
+   GPS HANDLING
+   ===================================================================== */
+function getGPS(){
+  return new Promise((resolve,reject)=>{
+    if(!navigator.geolocation)return reject(new Error('GPS not supported on this device'));
+    navigator.geolocation.getCurrentPosition(
+      pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy}),
+      err=>reject(new Error(err.message||'Location unavailable')),
+      {enableHighAccuracy:true,timeout:15000,maximumAge:8000}
+    );
+  });
+}
+
+function distanceMeters(lat1,lng1,lat2,lng2){
+  const R=6371000;
+  const toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1);
+  const dLng=toRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+window.checkGPS=async()=>{
+  const el=document.getElementById('gpsStatus');
+  if(el){el.className='muted';el.textContent='Checking GPS...';}
+  try{
+    const p=await getGPS();
+    currentGPS=p;
+    const sLat=Number(companySettings.siteLat);
+    const sLng=Number(companySettings.siteLng);
+    const radius=Number(companySettings.radiusMeters)||150;
+    if(!sLat||!sLng){
+      if(el){el.className='muted';el.textContent='GPS: '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' (no site lock set)';}
+      return true;
+    }
+    const dist=distanceMeters(p.lat,p.lng,sLat,sLng);
+    if(dist<=radius){
+      if(el){el.className='ok';el.textContent='✓ On site ('+Math.round(dist)+'m, limit '+radius+'m)';}
+      return true;
+    }
+    if(el){el.className='error';el.textContent='✗ Off site ('+Math.round(dist)+'m, limit '+radius+'m)';}
+    return false;
+  }catch(e){
+    if(el){el.className='error';el.textContent='GPS error: '+e.message;}
+    return false;
+  }
+};
+
+window.useMyLocationForSite=async()=>{
+  try{
+    const p=await getGPS();
+    document.getElementById('siteLat').value=p.lat.toFixed(6);
+    document.getElementById('siteLng').value=p.lng.toFixed(6);
+    msg('settingsMsg','Got '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' — click Save Settings to lock','ok');
+  }catch(e){msg('settingsMsg','GPS error: '+e.message);}
+};
+
+
+/* =====================================================================
+   CLOCK IN / OUT (smart toggle)
+   ===================================================================== */
+window.smartClockAction=async()=>{
+  if(!selectedWorker)return alert('No worker selected.');
+  if(clockBusy)return;
+
+  const open=openEntry(selectedWorker.id);
+
+  if(!currentPhotoData)return alert('Take the required clock photo first.');
+
+  const gpsOk=await checkGPS();
+  if(!gpsOk && companySettings.siteLat && companySettings.siteLng){
+    if(!confirm('You appear to be off-site. Continue anyway?'))return;
+  }
+
+  clockBusy=true;
+  const btn=document.getElementById('smartClockBtn');
+  if(btn)btn.disabled=true;
+  try{
+    const now=new Date().toISOString();
+    if(open){
+      const update={
+        outTime:now,
+        photoOut:currentPhotoData,
+        photo:currentPhotoData,
+        status:'completed',
+        gpsOut:currentGPS||null,
+        updatedAt:now
+      };
+      if(open.breakStart){
+        const extraBreak=(new Date()-new Date(open.breakStart))/60000;
+        update.breakMins=Number(open.breakMins||0)+extraBreak;
+        update.breakStart=null;
+      }
+      await F.updateDoc(entryDoc(open.id),update);
+    }else{
+      await F.addDoc(entriesRef(),{
+        workerId:selectedWorker.id,
+        workerName:selectedWorker.name,
+        rateAtClock:Number(selectedWorker.rate||0),
+        inTime:now,
+        photoIn:currentPhotoData,
+        photo:currentPhotoData,
+        status:'active',
+        breakMins:0,
+        breakStart:null,
+        gpsIn:currentGPS||null,
+        createdAt:now
+      });
+    }
+    currentPhotoData=null;
+    const photoInput=document.getElementById('clockPhoto');
+    if(photoInput)photoInput.value='';
+    const preview=document.getElementById('photoPreview');
+    if(preview){preview.src='';preview.classList.add('hidden');}
+  }catch(e){alert('Clock action failed: '+e.message);}
+  clockBusy=false;
+  if(btn)btn.disabled=false;
+};
+
+
+/* =====================================================================
+   BREAK HANDLING
+   ===================================================================== */
+window.startBreak=async()=>{
+  if(!selectedWorker)return;
+  const open=openEntry(selectedWorker.id);
+  if(!open)return alert('You need to clock in first.');
+  if(open.breakStart)return alert('Break is already in progress.');
+  try{
+    await F.updateDoc(entryDoc(open.id),{
+      breakStart:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    });
+  }catch(e){alert('Failed to start break: '+e.message);}
+};
+
+window.endBreak=async()=>{
+  if(!selectedWorker)return;
+  const open=openEntry(selectedWorker.id);
+  if(!open)return alert('You are not clocked in.');
+  if(!open.breakStart)return alert('No break in progress.');
+  try{
+    const minutes=(new Date()-new Date(open.breakStart))/60000;
+    await F.updateDoc(entryDoc(open.id),{
+      breakMins:Number(open.breakMins||0)+minutes,
+      breakStart:null,
+      updatedAt:new Date().toISOString()
+    });
+  }catch(e){alert('Failed to end break: '+e.message);}
+};
+
+
+/* =====================================================================
+   WORKER SCREEN RENDERING + LIVE TIMER
+   ===================================================================== */
+let liveTimer=null;
+
+function renderWorkerScreen(){
+  if(!selectedWorker)return;
+  const w=workers.find(x=>x.id===selectedWorker.id);
+  if(w)selectedWorker=w;
+  const cur=selectedWorker;
+
+  const profile=document.getElementById('activeWorkerProfile');
+  if(profile)profile.innerHTML=workerProfileHTML(cur);
+  const nameEl=document.getElementById('activeWorkerName');
+  if(nameEl)nameEl.textContent=cur.name||'Worker';
+
+  const open=openEntry(cur.id);
+  const statusEl=document.getElementById('workerStatus');
+  const clockBtn=document.getElementById('smartClockBtn');
+  const breakStart=document.getElementById('breakStartBtn');
+  const breakEnd=document.getElementById('breakEndBtn');
+  const breakRow=document.getElementById('breakRow');
+
+  if(open){
+    if(statusEl)statusEl.innerHTML='<span class="statusIn">🟢 Clocked In</span>';
+    if(clockBtn){clockBtn.textContent=appLang==='es'?'⏹ Salida':'⏹ Clock Out';clockBtn.classList.add('danger');}
+    if(breakStart)breakStart.style.display=open.breakStart?'none':'';
+    if(breakEnd)breakEnd.style.display=open.breakStart?'':'none';
+    if(breakRow)breakRow.style.display=open.breakStart?'':'none';
+  }else{
+    if(statusEl)statusEl.innerHTML='<span class="statusOut">⬤ Clocked Out</span>';
+    if(clockBtn){clockBtn.textContent=appLang==='es'?'⏱ Entrada':'⏱ Clock In';clockBtn.classList.remove('danger');}
+    if(breakStart)breakStart.style.display='none';
+    if(breakEnd)breakEnd.style.display='none';
+    if(breakRow)breakRow.style.display='none';
+  }
+
+  const myEntries=entries.filter(e=>e.workerId===cur.id);
+  const todayEntries=myEntries.filter(isTodayEntry);
+  const weekEntries=myEntries.filter(isThisWeek);
+  const todayHours=todayEntries.reduce((s,e)=>s+entryHoursLive(e),0);
+  const weekHours=weekEntries.reduce((s,e)=>s+entryHoursLive(e),0);
+  const rate=Number(cur.rate||0);
+
+  const todayEarn=document.getElementById('todayEarn');
+  const todayHoursEl=document.getElementById('todayHours');
+  const weekEarn=document.getElementById('weekEarn');
+  const weekHoursEl=document.getElementById('weekHours');
+  if(todayEarn)todayEarn.textContent=money(todayHours*rate);
+  if(todayHoursEl)todayHoursEl.textContent=todayHours.toFixed(2)+'h';
+  if(weekEarn)weekEarn.textContent=money(weekHours*rate);
+  if(weekHoursEl)weekHoursEl.textContent=weekHours.toFixed(2)+'h';
+
+  const myList=document.getElementById('myEntries');
+  if(myList){
+    const sorted=myEntries.slice().sort((a,b)=>new Date(b.inTime)-new Date(a.inTime)).slice(0,12);
+    myList.innerHTML=sorted.map(e=>`
+      <div class="table-row">
+        <span>${fmtDate(e.inTime)}</span>
+        <span>${fmtTime(e.inTime)}</span>
+        <span>${e.outTime?fmtTime(e.outTime):'--'}</span>
+        <span>${entryHoursLive(e).toFixed(2)}h</span>
+        <span>${money(entryHoursLive(e)*Number(e.rateAtClock||rate))}</span>
+        <span></span>
+      </div>
+    `).join('')||'<p class="muted">No entries yet</p>';
+  }
+
+  if(!liveTimer){liveTimer=setInterval(updateLiveDisplay,1000);}
+  updateLiveDisplay();
+}
+window.renderWorkerScreen=renderWorkerScreen;
+
+function updateLiveDisplay(){
+  const clockEl=document.getElementById('liveClock');
+  if(clockEl){
+    const d=new Date();
+    clockEl.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  }
+  if(!selectedWorker)return;
+  const open=openEntry(selectedWorker.id);
+  const wt=document.getElementById('liveWorkTime');
+  const le=document.getElementById('liveEarnings');
+  const bt=document.getElementById('liveBreakTime');
+  if(!open){
+    if(wt)wt.textContent='00:00:00';
+    if(le)le.textContent=money(0);
+    if(bt)bt.textContent='00:00';
+    return;
+  }
+  const hrs=entryHoursLive(open);
+  if(wt){
+    const total=Math.floor(hrs*3600);
+    const h=Math.floor(total/3600);
+    const m=Math.floor((total%3600)/60);
+    const s=total%60;
+    wt.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  const rate=Number(selectedWorker.rate||open.rateAtClock||0);
+  if(le)le.textContent=money(hrs*rate);
+  if(open.breakStart && bt){
+    const ms=new Date()-new Date(open.breakStart);
+    const min=Math.floor(ms/60000);
+    const sec=Math.floor((ms%60000)/1000);
+    bt.textContent=String(min).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  }
+}
+
+setInterval(()=>{try{refreshLiveAdminDash();}catch(e){}},5000);
+
+
+/* =====================================================================
+   ADMIN — EDIT TIME ENTRY
+   ===================================================================== */
+function fmtTime24(d){
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+window.openEditEntry=(entryId)=>{
+  const e=entries.find(x=>x.id===entryId);
+  if(!e)return;
+  document.getElementById('editEntryId').value=entryId;
+  const inDate=new Date(e.inTime);
+  document.getElementById('editDate').value=getLocalDateKey(inDate);
+  document.getElementById('editIn').value=fmtTime24(inDate);
+  document.getElementById('editOut').value=e.outTime?fmtTime24(new Date(e.outTime)):'';
+  document.getElementById('editBreak').value=Math.round(e.breakMins||0);
+  document.getElementById('editModal').classList.add('open');
+};
+
+window.closeEditModal=()=>{
+  document.getElementById('editModal').classList.remove('open');
+};
+
+window.saveEntryEdit=async()=>{
+  const id=document.getElementById('editEntryId').value;
+  if(!id)return;
+  const date=document.getElementById('editDate').value;
+  const inT=document.getElementById('editIn').value;
+  const outT=document.getElementById('editOut').value;
+  const brk=Number(document.getElementById('editBreak').value)||0;
+  if(!date||!inT)return alert('Date and clock-in time are required.');
+  const inDate=new Date(date+'T'+inT+':00');
+  let outDate=null;
+  if(outT){
+    outDate=new Date(date+'T'+outT+':00');
+    if(outDate<inDate)outDate.setDate(outDate.getDate()+1);
+  }
+  try{
+    const update={
+      inTime:inDate.toISOString(),
+      breakMins:brk,
+      editedAt:new Date().toISOString(),
+      editedBy:currentUser?.email||'admin',
+      updatedAt:new Date().toISOString()
+    };
+    if(outDate){
+      update.outTime=outDate.toISOString();
+      update.status='completed';
+    }
+    await F.updateDoc(entryDoc(id),update);
+    closeEditModal();
+  }catch(err){alert('Failed to save: '+err.message);}
+};
+
+
+/* =====================================================================
+   ADMIN — SETTINGS / PLAN / DELETE
+   ===================================================================== */
+window.saveSettings=async()=>{
+  const lat=document.getElementById('siteLat').value.trim();
+  const lng=document.getElementById('siteLng').value.trim();
+  const radius=Number(document.getElementById('siteRadius').value)||150;
+  try{
+    const data={
+      siteLat:lat?Number(lat):null,
+      siteLng:lng?Number(lng):null,
+      radiusMeters:radius,
+      updatedAt:new Date().toISOString()
+    };
+    await F.setDoc(companyRef(),data,{merge:true});
+    companySettings={...companySettings,...data};
+    msg('settingsMsg','Settings saved','ok');
+  }catch(e){msg('settingsMsg','Failed: '+e.message);}
+};
+
+window.setPlan=async(plan)=>{
+  if(!PLAN_LIMITS[plan])return;
+  try{
+    const limit=PLAN_LIMITS[plan];
+    await F.setDoc(companyRef(),{
+      plan,workerLimit:limit,
+      updatedAt:new Date().toISOString()
+    },{merge:true});
+    companySettings={...companySettings,plan,workerLimit:limit};
+    renderDash();
+    alert('Plan updated to '+plan.toUpperCase()+' ('+limit+' workers).');
+  }catch(e){alert('Failed to update plan: '+e.message);}
+};
+
+window.deleteCompanyAccount=async()=>{
+  const confirmCode=document.getElementById('deleteConfirm').value.trim();
+  if(confirmCode!==currentCompanyId)return alert('Type your company code exactly to confirm.');
+  if(!confirm('This will deactivate the company account. Workers will be blocked. Data is kept. Continue?'))return;
+  try{
+    await F.setDoc(companyRef(),{
+      status:'deleted',
+      deletedAt:new Date().toISOString()
+    },{merge:true});
+    alert('Company deactivated.');
+    await F.signOut(auth);
+    stopListeners();
+    showScreen('home');
+  }catch(e){alert('Failed: '+e.message);}
+};
+
+
+/* =====================================================================
+   EXPORTS — CSV + PDF
+   ===================================================================== */
+function csvEscape(v){
+  const s=String(v??'');
+  return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
+
+function downloadCSV(filename,rows){
+  const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},150);
+}
+
+window.exportCSV=()=>{
+  const rows=[['Worker','Date','In','Out','Hours','Break (min)','Rate','Gross']];
+  for(const e of entries){
+    const w=workers.find(x=>x.id===e.workerId);
+    const rate=Number(e.rateAtClock||w?.rate||0);
+    const h=entryHoursLive(e);
+    rows.push([
+      e.workerName||w?.name||'',
+      fmtDate(e.inTime),
+      fmtTime(e.inTime),
+      e.outTime?fmtTime(e.outTime):'',
+      h.toFixed(2),
+      Math.round(e.breakMins||0),
+      rate.toFixed(2),
+      (h*rate).toFixed(2)
+    ]);
+  }
+  downloadCSV(currentCompanyId+'-payroll-'+getLocalDateKey(new Date())+'.csv',rows);
+};
+
+window.downloadWorkerCSV=(period)=>{
+  if(!selectedWorker)return alert('No worker selected.');
+  const filterFn=period==='today'?isTodayEntry:isThisWeek;
+  const list=entries.filter(e=>e.workerId===selectedWorker.id && filterFn(e));
+  const rows=[['Date','In','Out','Hours','Break (min)','Rate','Gross']];
+  const rate=Number(selectedWorker.rate||0);
+  for(const e of list){
+    const r=Number(e.rateAtClock||rate);
+    const h=entryHoursLive(e);
+    rows.push([
+      fmtDate(e.inTime),
+      fmtTime(e.inTime),
+      e.outTime?fmtTime(e.outTime):'',
+      h.toFixed(2),
+      Math.round(e.breakMins||0),
+      r.toFixed(2),
+      (h*r).toFixed(2)
+    ]);
+  }
+  downloadCSV(selectedWorker.name+'-'+period+'.csv',rows);
+};
+
+let jspdfPromise=null;
+function loadJsPDF(){
+  if(window.jspdf?.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
+  if(jspdfPromise)return jspdfPromise;
+  jspdfPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload=()=>{
+      if(window.jspdf?.jsPDF)resolve(window.jspdf.jsPDF);
+      else reject(new Error('jsPDF failed to load'));
+    };
+    s.onerror=()=>reject(new Error('Could not load jsPDF (network?)'));
+    document.head.appendChild(s);
+  });
+  return jspdfPromise;
+}
+
+async function generatePayPDF(periodLabel,filterFn,filename){
+  if(!selectedWorker)return alert('No worker selected.');
+  const list=entries.filter(e=>e.workerId===selectedWorker.id && filterFn(e));
+  if(!list.length)return alert('No entries for this period yet.');
+  const rate=Number(selectedWorker.rate||0);
+  const totalHours=list.reduce((s,e)=>s+entryHoursLive(e),0);
+  const totalGross=list.reduce((s,e)=>s+(entryHoursLive(e)*Number(e.rateAtClock||rate)),0);
+
+  try{
+    const jsPDF=await loadJsPDF();
+    const doc=new jsPDF();
+
+    let y=18;
+    doc.setFontSize(20);
+    doc.text(String(companySettings.name||currentCompanyId||''),14,y);
+    y+=8;
+    doc.setFontSize(11);
+    doc.setTextColor(120);
+    doc.text(periodLabel+' Pay Statement',14,y);
+    y+=10;
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    doc.text('Worker: '+(selectedWorker.name||''),14,y);y+=6;
+    doc.text('Rate: '+money(rate)+' / hr',14,y);y+=6;
+    doc.text('Generated: '+new Date().toLocaleString(),14,y);y+=10;
+
+    doc.setFontSize(10);
+    doc.text('Date',14,y);
+    doc.text('In',50,y);
+    doc.text('Out',75,y);
+    doc.text('Hours',100,y);
+    doc.text('Break',125,y);
+    doc.text('Gross',150,y);
+    y+=2;
+    doc.line(14,y,196,y);
+    y+=5;
+
+    const sorted=list.slice().sort((a,b)=>new Date(a.inTime)-new Date(b.inTime));
+    for(const e of sorted){
+      if(y>270){doc.addPage();y=20;}
+      const r=Number(e.rateAtClock||rate);
+      const h=entryHoursLive(e);
+      doc.text(fmtDate(e.inTime),14,y);
+      doc.text(fmtTime(e.inTime),50,y);
+      doc.text(e.outTime?fmtTime(e.outTime):'--',75,y);
+      doc.text(h.toFixed(2),100,y);
+      doc.text(Math.round(e.breakMins||0)+'m',125,y);
+      doc.text(money(h*r),150,y);
+      y+=6;
+    }
+    y+=4;
+    doc.line(14,y,196,y);y+=8;
+    doc.setFontSize(12);
+    doc.text('Total Hours: '+totalHours.toFixed(2),14,y);y+=7;
+    doc.setFontSize(14);
+    doc.text('Total Pay: '+money(totalGross),14,y);
+
+    doc.save(filename);
+  }catch(e){alert('PDF error: '+e.message);}
+}
+
+window.downloadDailyPDF=()=>{
+  if(!selectedWorker)return alert('No worker selected.');
+  generatePayPDF('Daily',isTodayEntry,(selectedWorker.name||'worker')+'-daily-'+getLocalDateKey(new Date())+'.pdf');
+};
+window.downloadWeeklyPDF=()=>{
+  if(!selectedWorker)return alert('No worker selected.');
+  generatePayPDF('Weekly',isThisWeek,(selectedWorker.name||'worker')+'-weekly-'+getLocalDateKey(new Date())+'.pdf');
+};
+
+
+/* =====================================================================
+   Re-apply worker logs filter when entries snapshot changes
+   ===================================================================== */
+const _origRenderEntries=renderEntries;
+renderEntries=function(){
+  if(workerLogsFilter){applyLogsFilter();}
+  else{_origRenderEntries();}
+};
+
+
+// Kick off the app
+init();
+</script>
+
+</body>
+</html>
