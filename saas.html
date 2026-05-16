@@ -1913,17 +1913,36 @@ function csvEscape(v){
   return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
 }
 
-function downloadCSV(filename,rows){
-  const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
+async function downloadCSV(filename,rows){
+  // BOM (﻿) makes Excel and Numbers on iOS parse UTF-8 correctly
+  const csv='﻿'+rows.map(r=>r.map(csvEscape).join(',')).join('\n');
+
+  // Build File directly from the string — avoids iOS Blob→File content loss bug
+  const file=new File([csv],filename,{type:'text/csv;charset=utf-8'});
+
+  // iOS Share Sheet (works on iOS 15+, iOS Chrome, iOS Safari)
+  if(navigator.canShare){
+    try{
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:filename});
+        return;
+      }
+    }catch(e){
+      if(e.name==='AbortError')return; // user dismissed — do nothing
+      // fell through: try standard download below
+    }
+  }
+
+  // Standard download — Android Chrome + desktop
+  const url=URL.createObjectURL(file);
   const a=document.createElement('a');
   a.href=url;a.download=filename;
   document.body.appendChild(a);a.click();
-  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},150);
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
 }
 
-window.exportCSV=()=>{
+window.exportCSV=async()=>{
+  if(!entries.length)return alert('No time entries found yet. Workers need to clock in and out first.');
   const rows=[['Worker','Date','In','Out','Hours','Break (min)','Rate','Gross']];
   for(const e of entries){
     const w=workers.find(x=>x.id===e.workerId);
@@ -1940,13 +1959,14 @@ window.exportCSV=()=>{
       (h*rate).toFixed(2)
     ]);
   }
-  downloadCSV(currentCompanyId+'-payroll-'+getLocalDateKey(new Date())+'.csv',rows);
+  await downloadCSV(currentCompanyId+'-payroll-'+getLocalDateKey(new Date())+'.csv',rows);
 };
 
-window.downloadWorkerCSV=(period)=>{
+window.downloadWorkerCSV=async(period)=>{
   if(!selectedWorker)return alert('No worker selected.');
   const filterFn=period==='today'?isTodayEntry:isThisWeek;
   const list=entries.filter(e=>e.workerId===selectedWorker.id && filterFn(e));
+  if(!list.length)return alert('No entries found for this period.');
   const rows=[['Date','In','Out','Hours','Break (min)','Rate','Gross']];
   const rate=Number(selectedWorker.rate||0);
   for(const e of list){
@@ -2040,6 +2060,17 @@ async function generatePayPDF(periodLabel,filterFn,filename){
     doc.setFontSize(14);
     doc.text('Total Pay: '+money(totalGross),14,y);
 
+    // iOS-compatible: use native Share Sheet if available, else jsPDF default
+    if(navigator.canShare){
+      try{
+        const pdfBlob=doc.output('blob');
+        const pdfFile=new File([pdfBlob],filename,{type:'application/pdf'});
+        if(navigator.canShare({files:[pdfFile]})){
+          await navigator.share({files:[pdfFile],title:filename});
+          return;
+        }
+      }catch(e){if(e.name==='AbortError')return;}
+    }
     doc.save(filename);
   }catch(e){alert('PDF error: '+e.message);}
 }
