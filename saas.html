@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
@@ -349,7 +350,15 @@ main{animation:screenEnter .35s ease}
 .copyBox{background:#111;border:1px solid var(--border);border-radius:14px;padding:10px;margin:8px 0;color:var(--accent);font-weight:900;text-align:center;word-break:break-word}
 .codeHint{font-size:12px;color:var(--muted);margin-top:-4px;margin-bottom:8px}
 
+
+.sitePill{display:flex;align-items:center;justify-content:space-between;background:#171200;border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin:8px 0;gap:10px;flex-wrap:wrap}
+.sitePill b{color:var(--accent)}
+.passInputWrap{position:relative;display:block;margin:8px 0}
+.passInputWrap input{margin:0!important;padding-right:46px!important;width:100%}
+.eyeBtn{position:absolute!important;right:8px!important;top:50%!important;transform:translateY(-50%)!important;background:transparent!important;border:none!important;padding:6px!important;font-size:18px!important;color:var(--muted)!important;cursor:pointer!important;margin:0!important;min-width:0!important}
+.faceWarn{color:var(--red);font-weight:900;font-size:14px}
 </style>
+
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="BeeShift">
 </head>
@@ -396,7 +405,11 @@ main{animation:screenEnter .35s ease}
   <div class="brand"><img src="logo.png"><div>Admin Login</div></div>
   <div class="card">
     <input id="email" placeholder="Admin email">
-    <input id="pass" type="password" placeholder="Password">
+    <div class="passInputWrap">
+      <input id="pass" type="password" placeholder="Password">
+      <button class="eyeBtn" onclick="togglePassView('pass')" tabindex="-1">👁</button>
+    </div>
+    <button class="smallLink" onclick="forgotPassword()" style="width:100%;margin:2px 0 6px">Forgot password?</button>
     <input id="company" placeholder="Company code">
     <div class="row">
       <button onclick="login()">Login</button>
@@ -420,7 +433,10 @@ main{animation:screenEnter .35s ease}
       <img id="signupCompanyLogoPreview" class="companyLogoPreview hidden">
     </div>
     <input id="signupEmail" placeholder="Owner email">
-    <input id="signupPass" type="password" placeholder="Password">
+    <div class="passInputWrap">
+      <input id="signupPass" type="password" placeholder="Password">
+      <button class="eyeBtn" onclick="togglePassView('signupPass')" tabindex="-1">👁</button>
+    </div>
     <div class="row">
       <button onclick="signup()">Create Company</button>
       <button class="smallLink" onclick="showScreen('home')">Back</button>
@@ -431,7 +447,7 @@ main{animation:screenEnter .35s ease}
 
 <main id="admin" class="hidden">
   <div class="top">
-    <div class="topTitle"><img src="logo.png">BeeShift Admin</div>
+    <div class="topTitle"><img src="logo.png"><span id="adminTopName">Admin</span></div>
     <button onclick="logout()">Logout</button>
   </div>
 
@@ -489,62 +505,91 @@ main{animation:screenEnter .35s ease}
 
   <section id="settingsTab" class="hidden">
 
-    <div class="card">
-      <h3>Company Branding</h3>
-      <div id="currentCompanyLogoBox"></div>
-      <input id="companyDisplayName" placeholder="Company display name">
-      <div class="copyBox" id="companyCodeCopyBox"></div>
-      <button onclick="copyCompanyCode()">Copy Company Code</button>
-      <div class="photoBox">
-        <input id="settingsCompanyLogo" class="photoInput" type="file" accept="image/*">
-        <label for="settingsCompanyLogo" class="photoBtn">🏢 Replace Company Logo</label>
-        <div class="photoHint">Optional. This logo appears in the worker kiosk.</div>
-        <img id="settingsCompanyLogoPreview" class="companyLogoPreview hidden">
-      </div>
-      <button onclick="saveCompanyBranding()">Save Branding</button>
-      <div id="brandingMsg" class="muted"></div>
-    </div>
+```
+<div class="card">
+  <h3>Company Branding</h3>
+  <div id="currentCompanyLogoBox"></div>
+  <input id="companyDisplayName" placeholder="Company display name">
+  <div class="copyBox" id="companyCodeCopyBox"></div>
+  <button onclick="copyCompanyCode()">Copy Company Code</button>
+  <div class="photoBox">
+    <input id="settingsCompanyLogo" class="photoInput" type="file" accept="image/*">
+    <label for="settingsCompanyLogo" class="photoBtn">🏢 Replace Company Logo</label>
+    <div class="photoHint">Optional. This logo appears in the worker kiosk.</div>
+    <img id="settingsCompanyLogoPreview" class="companyLogoPreview hidden">
+  </div>
+  <button onclick="saveCompanyBranding()">Save Branding</button>
+  <div id="brandingMsg" class="muted"></div>
+</div>
 
-    <div class="card">
-      <h3>Worker Kiosk QR / Link</h3>
-      <p class="muted">Workers can open this link or scan a QR to enter this company kiosk automatically.</p>
-      <div class="copyBox" id="kioskLinkBox"></div>
-      <div id="kioskQRBox" style="text-align:center"></div>
-      <button onclick="copyKioskLink()">Copy Kiosk Link</button>
-    </div>
+<div class="card">
+  <h3>Worker Kiosk QR / Link</h3>
+  <p class="muted">Workers can open this link or scan a QR to enter this company kiosk automatically.</p>
+  <div class="copyBox" id="kioskLinkBox"></div>
+  <div id="kioskQRBox" style="text-align:center"></div>
+  <button onclick="copyKioskLink()">Copy Kiosk Link</button>
+</div>
 
-    <div class="card">
-      <h3>GPS Lock Settings</h3>
-      <input id="siteLat" placeholder="Latitude">
-      <input id="siteLng" placeholder="Longitude">
-      <input id="siteRadius" type="number" placeholder="Radius meters">
-      <div class="row">
-        <button onclick="useMyLocationForSite()">Use My Location</button>
-        <button onclick="saveSettings()">Save Settings</button>
-      </div>
-      <div id="settingsMsg" class="muted"></div>
-    </div>
+<div class="card">
+  <h3>Account &amp; Password</h3>
+  <p class="muted" id="adminEmailDisplay"></p>
+  <div class="passInputWrap">
+    <input id="currentPass" type="password" placeholder="Current password">
+    <button class="eyeBtn" onclick="togglePassView('currentPass')" tabindex="-1">👁</button>
+  </div>
+  <div class="passInputWrap">
+    <input id="newPass" type="password" placeholder="New password (min 6 chars)">
+    <button class="eyeBtn" onclick="togglePassView('newPass')" tabindex="-1">👁</button>
+  </div>
+  <div class="passInputWrap">
+    <input id="confirmPass" type="password" placeholder="Confirm new password">
+    <button class="eyeBtn" onclick="togglePassView('confirmPass')" tabindex="-1">👁</button>
+  </div>
+  <div class="row">
+    <button onclick="changePassword()">Change Password</button>
+    <button class="smallLink" onclick="forgotPassword()">📧 Send Reset Email</button>
+  </div>
+  <div id="passMsg" class="muted"></div>
+</div>
 
-    <div class="card">
-      <h3>Plans + Limits</h3>
-      <div class="row">
-        <button onclick="setPlan('basic')">Basic 10</button>
-        <button onclick="setPlan('premium')">Business 25</button>
-        <button onclick="setPlan('pro')">Pro 50</button>
-      </div>
-    </div>
+<div class="card">
+  <h3>Work Sites / GPS Lock</h3>
+  <p class="muted">Add locations where workers are allowed to clock in. If no sites are added, GPS is not required.</p>
+  <div id="sitesList"></div>
+  <h4 style="margin:14px 0 4px;color:var(--accent)">Add New Site</h4>
+  <input id="newSiteName" placeholder="Site name (e.g. Main Office)">
+  <input id="newSiteLat" placeholder="Latitude">
+  <input id="newSiteLng" placeholder="Longitude">
+  <input id="newSiteRadius" type="number" placeholder="Radius meters (default 150)">
+  <div class="row">
+    <button onclick="useMyLocationForSite()">📍 Use My Location</button>
+    <button class="green" onclick="addSite()">➕ Add Site</button>
+  </div>
+  <div id="settingsMsg" class="muted"></div>
+</div>
 
-    <div class="card">
-      <h3>Preview</h3>
-      <button onclick="showScreen('kiosk')">Preview Kiosk</button>
-    </div>
+<div class="card">
+  <h3>Plans + Limits</h3>
+  <div class="row">
+    <button onclick="setPlan('basic')">Basic 10</button>
+    <button onclick="setPlan('premium')">Business 25</button>
+    <button onclick="setPlan('pro')">Pro 50</button>
+  </div>
+</div>
 
-    <div class="card" style="border-color:#ff5252">
-      <h3 class="error">Danger Zone</h3>
-      <p class="muted">This deactivates the company. Data stays saved for safety, but workers will be blocked from entering.</p>
-      <input id="deleteConfirm" placeholder="Type company code to confirm">
-      <button class="danger" onclick="deleteCompanyAccount()">Delete Company Account</button>
-    </div>
+<div class="card">
+  <h3>Preview</h3>
+  <button onclick="showScreen('kiosk')">Preview Kiosk</button>
+</div>
+
+<div class="card" style="border-color:#ff5252">
+  <h3 class="error">Danger Zone</h3>
+  <p class="muted">This deactivates the company. Data stays saved for safety, but workers will be blocked from entering.</p>
+  <input id="deleteConfirm" placeholder="Type company code to confirm">
+  <button class="danger" onclick="deleteCompanyAccount()">Delete Company Account</button>
+</div>
+```
+
   </section>
 </main>
 
@@ -567,41 +612,44 @@ main{animation:screenEnter .35s ease}
     <div id="activeWorkerProfile"></div><h2 id="activeWorkerName"></h2>
     <div class="clock" id="liveClock">00:00:00</div>
 
-    <div class="earnGrid">
-      <div class="earnCard"><small>Today</small><b id="todayEarn">$0.00</b><span id="todayHours">0.00h</span></div>
-      <div class="earnCard"><small>This Week</small><b id="weekEarn">$0.00</b><span id="weekHours">0.00h</span></div>
-    </div>
+```
+<div class="earnGrid">
+  <div class="earnCard"><small>Today</small><b id="todayEarn">$0.00</b><span id="todayHours">0.00h</span></div>
+  <div class="earnCard"><small>This Week</small><b id="weekEarn">$0.00</b><span id="weekHours">0.00h</span></div>
+</div>
 
-    <div class="liveStatsCard">
-      <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
-      <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
-      <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
-    </div>
+<div class="liveStatsCard">
+  <p>⏱ Work Time: <b id="liveWorkTime">00:00:00</b></p>
+  <p>💰 Live Earnings: <b id="liveEarnings">$0.00</b></p>
+  <p id="breakRow" style="display:none">⏸ Break Time: <b id="liveBreakTime">00:00</b></p>
+</div>
 
-    <p>Status: <b id="workerStatus">Out</b></p>
-    <p id="gpsStatus" class="muted">GPS not checked</p>
+<p>Status: <b id="workerStatus">Out</b></p>
+<p id="gpsStatus" class="muted">GPS not checked</p>
 
-    <div class="photoBox">
-      <input id="clockPhoto" class="photoInput" type="file" accept="image/*" capture="user">
-      <label for="clockPhoto" class="photoBtn">📸 Take Required Clock Photo</label>
-      <div class="photoHint">Required only for Clock In and Clock Out</div>
-      <img id="photoPreview" class="photoPreview hidden">
-    </div>
+<div class="photoBox">
+  <input id="clockPhoto" class="photoInput" type="file" accept="image/*" capture="user">
+  <label for="clockPhoto" class="photoBtn">📸 Take Required Clock Photo</label>
+  <div class="photoHint">Required only for Clock In and Clock Out</div>
+  <img id="photoPreview" class="photoPreview hidden">
+</div>
 
-    <button id="smartClockBtn" class="bigClockBtn" onclick="smartClockAction()">Clock In</button>
+<button id="smartClockBtn" class="bigClockBtn" onclick="smartClockAction()">Clock In</button>
 
-    <div class="row">
-      <button onclick="checkGPS()">Check GPS</button>
-      <button id="breakStartBtn" class="orange" onclick="startBreak()">Start Break</button>
-      <button id="breakEndBtn" class="green" onclick="endBreak()">End Break</button>
-    </div>
+<div class="row">
+  <button onclick="checkGPS()">Check GPS</button>
+  <button id="breakStartBtn" class="orange" onclick="startBreak()">Start Break</button>
+  <button id="breakEndBtn" class="green" onclick="endBreak()">End Break</button>
+</div>
 
-    <div class="row workerPdfRow">
-      <button id="dailyPdfBtn" class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
-      <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
-    </div>
+<div class="row workerPdfRow">
+  <button id="dailyPdfBtn" class="pdfBtn" onclick="downloadDailyPDF()">📄 Daily Pay PDF</button>
+  <button id="weeklyPdfBtn" class="pdfBtn" onclick="downloadWeeklyPDF()">📄 Weekly Pay PDF</button>
+</div>
 
-    <p class="muted">Photo + GPS are required for Clock In and Clock Out only. Break buttons work while your shift is active.</p>
+<p class="muted">Photo required for Clock In and Clock Out. GPS only enforced on Clock In when sites are configured. Clock Out and breaks work from anywhere.</p>
+```
+
   </div>
 
   <div class="card"><h3>My recent entries</h3><div id="myEntries"></div></div>
@@ -630,7 +678,6 @@ main{animation:screenEnter .35s ease}
   </div>
 </div>
 
-
 <div id="photoModal" class="modal">
   <div class="modalBox" style="max-width:760px;text-align:center">
     <h3 id="photoModalTitle">Verification Photo</h3>
@@ -638,7 +685,6 @@ main{animation:screenEnter .35s ease}
     <div class="row"><button class="smallLink" onclick="closePhotoModal()">Close</button></div>
   </div>
 </div>
-
 
 <div id="editWorkerModal" class="modal">
   <div class="modalBox">
@@ -674,7 +720,7 @@ const firebaseConfig={
 
 const PLAN_LIMITS={basic:10,premium:25,pro:50};
 let app,auth,db,F,currentUser=null,currentCompanyId=null;
-let companySettings={plan:'basic',workerLimit:10,radiusMeters:150,status:'active'};
+let companySettings={plan:'basic',workerLimit:10,radiusMeters:150,status:'active',sites:[]};
 let workers=[],entries=[],selectedWorker=null,pinWorker=null,currentGPS=null,currentPhotoData=null,workerProfilePhotoData=null,editWorkerProfilePhotoData=null,signupCompanyLogoData=null,settingsCompanyLogoData=null,appLang=localStorage.getItem('beeshift_lang')||'en';
 let clockBusy=false,unsubW=null,unsubE=null;
 
@@ -772,6 +818,10 @@ function renderCompanyBranding(){
     if(settingsCompanyLogoData){preview.src=settingsCompanyLogoData;preview.classList.remove('hidden')}
     else{preview.src='';preview.classList.add('hidden')}
   }
+  const _n=companySettings.name||currentCompanyId||'';
+  const _atn2=document.getElementById('adminTopName');if(_atn2&&_n)_atn2.textContent=_n;
+  const _kc=document.getElementById('kioskCompany');
+  if(_kc&&_n)_kc.innerHTML='<b>'+safeText(_n)+'</b><br><span class="muted" style="font-size:12px">Code: '+(currentCompanyId||'')+'</span>';
 }
 
 window.copyCompanyCode=async()=>{
@@ -990,7 +1040,8 @@ async function loadKioskCompanyByCode(code){
 
   if(companySettings.status==='deleted'||companySettings.status==='pending_delete')throw new Error('Company account inactive');
 
-  document.getElementById('kioskCompany').innerHTML=`Company: <b>${currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
+  const _kName=companySettings.name||currentCompanyId;
+  document.getElementById('kioskCompany').innerHTML='<b>'+safeText(_kName)+'</b><br><span class="muted" style="font-size:12px">Code: '+currentCompanyId+'</span>';
   renderCompanyBranding();
   listenData();
   showScreen('kiosk');
@@ -1012,13 +1063,15 @@ window.leaveKiosk=()=>{
 }
 
 function startApp(){
-  document.getElementById('companyInfo').innerHTML=`Owner: <b>${currentUser.email}</b><br>Company: <b>${currentCompanyId}</b>`;
-  document.getElementById('kioskCompany').innerHTML=`Company: <b>${currentCompanyId}</b><br>Code: <b>${currentCompanyId}</b>`;
+  const _cName=companySettings.name||currentCompanyId;
+  document.getElementById('companyInfo').innerHTML='<b style="font-size:18px;color:var(--accent)">'+safeText(_cName)+'</b><br><span style="font-size:12px">Owner: '+currentUser.email+' &middot; Code: '+currentCompanyId+'</span>';
+  document.getElementById('kioskCompany').innerHTML='<b>'+safeText(_cName)+'</b><br><span class="muted" style="font-size:12px">Code: '+currentCompanyId+'</span>';
+  const _atn=document.getElementById('adminTopName');
+  if(_atn)_atn.textContent=_cName;
+  const _ade=document.getElementById('adminEmailDisplay');
+  if(_ade)_ade.textContent='Logged in as: '+currentUser.email;
   renderCompanyBranding();
-  document.getElementById('siteLat').value=companySettings.siteLat||'';
-  document.getElementById('siteLng').value=companySettings.siteLng||'';
-  document.getElementById('siteRadius').value=companySettings.radiusMeters||150;
-  renderCompanyBranding();
+  renderSites();
   listenData();
   showScreen('admin');
 }
@@ -1210,8 +1263,10 @@ function renderPayroll(){
 
 function photoButtons(e){
   let html='';
-  const clockPhoto=e.photo||e.photoIn||e.photoOut||'';
-  if(clockPhoto)html+=`<button onclick="viewPhoto('${safeText(e.id)}')">Clock</button>`;
+  if(e.faceMatchWarning)html+=`<span class="faceWarn" title="${e.faceMatchStatus==='no_face'?'No face detected':'Face mismatch detected — review photos'}">⚠️</span> `;
+  if(e.photoIn)html+=`<button onclick="viewSpecificPhoto('${safeText(e.id)}','in')">📷 In</button>`;
+  if(e.photoOut)html+=`<button onclick="viewSpecificPhoto('${safeText(e.id)}','out')">📷 Out</button>`;
+  else if(e.photo&&!e.photoIn)html+=`<button onclick="viewPhoto('${safeText(e.id)}')">📷</button>`;
   html+=profilePhotoButton(e.workerId);
   html+=`<button onclick="openEditEntry('${safeText(e.id)}')">Edit</button>`;
   return `<div class="photoActions">${html||'--'}</div>`;
@@ -1503,26 +1558,28 @@ function distanceMeters(lat1,lng1,lat2,lng2){
 
 window.checkGPS=async()=>{
   const el=document.getElementById('gpsStatus');
-  if(el){el.className='muted';el.textContent='Checking GPS...';}
+  if(el){el.className='muted';el.textContent='Checking location...';}
   try{
     const p=await getGPS();
     currentGPS=p;
-    const sLat=Number(companySettings.siteLat);
-    const sLng=Number(companySettings.siteLng);
-    const radius=Number(companySettings.radiusMeters)||150;
-    if(!sLat||!sLng){
-      if(el){el.className='muted';el.textContent='GPS: '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' (no site lock set)';}
+    const sites=companySettings.sites||[];
+    if(!sites.length){
+      if(el){el.className='muted';el.textContent='GPS: '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' (no sites configured)';}
       return true;
     }
-    const dist=distanceMeters(p.lat,p.lng,sLat,sLng);
-    if(dist<=radius){
-      if(el){el.className='ok';el.textContent='✓ On site ('+Math.round(dist)+'m, limit '+radius+'m)';}
-      return true;
+    for(const site of sites){
+      const dist=distanceMeters(p.lat,p.lng,Number(site.lat),Number(site.lng));
+      if(dist<=Number(site.radius||150)){
+        if(el){el.className='ok';el.textContent='✓ On site: '+site.name+' ('+Math.round(dist)+'m away)';}
+        return true;
+      }
     }
-    if(el){el.className='error';el.textContent='✗ Off site ('+Math.round(dist)+'m, limit '+radius+'m)';}
+    let nearest={name:'',dist:Infinity};
+    for(const site of sites){const d=distanceMeters(p.lat,p.lng,Number(site.lat),Number(site.lng));if(d<nearest.dist)nearest={name:site.name,dist:d};}
+    if(el){el.className='error';el.textContent='✗ Off site. Nearest: '+nearest.name+' ('+Math.round(nearest.dist)+'m). Clock in not allowed.';}
     return false;
   }catch(e){
-    if(el){el.className='error';el.textContent='GPS error: '+e.message;}
+    if(el){el.className='error';el.textContent='GPS error: '+e.message+'. Cannot verify location.';}
     return false;
   }
 };
@@ -1530,9 +1587,11 @@ window.checkGPS=async()=>{
 window.useMyLocationForSite=async()=>{
   try{
     const p=await getGPS();
-    document.getElementById('siteLat').value=p.lat.toFixed(6);
-    document.getElementById('siteLng').value=p.lng.toFixed(6);
-    msg('settingsMsg','Got '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' — click Save Settings to lock','ok');
+    const latEl=document.getElementById('newSiteLat');
+    const lngEl=document.getElementById('newSiteLng');
+    if(latEl)latEl.value=p.lat.toFixed(6);
+    if(lngEl)lngEl.value=p.lng.toFixed(6);
+    msg('settingsMsg','📍 Location filled: '+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+' · Enter a site name then click Add Site','ok');
   }catch(e){msg('settingsMsg','GPS error: '+e.message);}
 };
 
@@ -1545,13 +1604,17 @@ window.smartClockAction=async()=>{
   if(clockBusy)return;
 
   const open=openEntry(selectedWorker.id);
-
   if(!currentPhotoData)return alert('Take the required clock photo first.');
 
-  const gpsOk=await checkGPS();
-  if(!gpsOk && companySettings.siteLat && companySettings.siteLng){
-    if(!confirm('You appear to be off-site. Continue anyway?'))return;
+  // GPS enforced ONLY on Clock In, ONLY when sites are configured
+  if(!open){
+    const _sites=companySettings.sites||[];
+    if(_sites.length>0){
+      const gpsOk=await checkGPS();
+      if(!gpsOk)return; // gpsStatus already shows the error — hard block
+    }
   }
+  // Clock Out: no GPS required — can clock out from anywhere
 
   clockBusy=true;
   const btn=document.getElementById('smartClockBtn');
@@ -1559,10 +1622,11 @@ window.smartClockAction=async()=>{
   try{
     const now=new Date().toISOString();
     if(open){
+      // ── CLOCK OUT ──
       const update={
         outTime:now,
         photoOut:currentPhotoData,
-        photo:currentPhotoData,
+        // 'photo' kept as original clock-in photo — admin can see both separately
         status:'completed',
         gpsOut:currentGPS||null,
         updatedAt:now
@@ -1574,7 +1638,10 @@ window.smartClockAction=async()=>{
       }
       await F.updateDoc(entryDoc(open.id),update);
     }else{
-      await F.addDoc(entriesRef(),{
+      // ── CLOCK IN ── capture docRef for face match
+      const _profilePic=selectedWorker.profilePhoto||'';
+      const _clockPic=currentPhotoData;
+      const docRef=await F.addDoc(entriesRef(),{
         workerId:selectedWorker.id,
         workerName:selectedWorker.name,
         rateAtClock:Number(selectedWorker.rate||0),
@@ -1587,8 +1654,13 @@ window.smartClockAction=async()=>{
         gpsIn:currentGPS||null,
         createdAt:now
       });
+      // Face match runs silently in background — never blocks or alerts worker
+      if(_profilePic&&_clockPic){
+        setTimeout(()=>runFaceMatch(docRef.id,_profilePic,_clockPic),600);
+      }
     }
     currentPhotoData=null;
+    currentGPS=null;
     const photoInput=document.getElementById('clockPhoto');
     if(photoInput)photoInput.value='';
     const preview=document.getElementById('photoPreview');
@@ -1800,22 +1872,7 @@ window.saveEntryEdit=async()=>{
 /* =====================================================================
    ADMIN — SETTINGS / PLAN / DELETE
    ===================================================================== */
-window.saveSettings=async()=>{
-  const lat=document.getElementById('siteLat').value.trim();
-  const lng=document.getElementById('siteLng').value.trim();
-  const radius=Number(document.getElementById('siteRadius').value)||150;
-  try{
-    const data={
-      siteLat:lat?Number(lat):null,
-      siteLng:lng?Number(lng):null,
-      radiusMeters:radius,
-      updatedAt:new Date().toISOString()
-    };
-    await F.setDoc(companyRef(),data,{merge:true});
-    companySettings={...companySettings,...data};
-    msg('settingsMsg','Settings saved','ok');
-  }catch(e){msg('settingsMsg','Failed: '+e.message);}
-};
+window.saveSettings=async()=>{/* replaced by addSite */};
 
 window.setPlan=async(plan)=>{
   if(!PLAN_LIMITS[plan])return;
@@ -1938,6 +1995,7 @@ async function generatePayPDF(periodLabel,filterFn,filename){
     const doc=new jsPDF();
 
     let y=18;
+    if(companySettings.logo){try{const _fmt=companySettings.logo.startsWith('data:image/png')?'PNG':'JPEG';doc.addImage(companySettings.logo,_fmt,152,8,44,44);}catch(e){}}
     doc.setFontSize(20);
     doc.text(String(companySettings.name||currentCompanyId||''),14,y);
     y+=8;
@@ -2004,6 +2062,201 @@ renderEntries=function(){
   if(workerLogsFilter){applyLogsFilter();}
   else{_origRenderEntries();}
 };
+
+
+
+
+/* =====================================================================
+   MULTI-SITE MANAGER
+   ===================================================================== */
+function renderSites(){
+  const el=document.getElementById('sitesList');
+  if(!el)return;
+  const sites=companySettings.sites||[];
+  if(!sites.length){
+    el.innerHTML='<p class="muted" style="margin:8px 0">No sites added yet — workers can clock in from anywhere.</p>';
+    return;
+  }
+  el.innerHTML=sites.map((s,i)=>`
+    <div class="sitePill">
+      <div>
+        <b>${safeText(s.name)}</b>
+        <span class="muted"> &middot; ${Number(s.lat).toFixed(4)}, ${Number(s.lng).toFixed(4)} &middot; ${s.radius||150}m radius</span>
+      </div>
+      <button class="danger" onclick="deleteSite(${i})">Remove</button>
+    </div>
+  `).join('');
+}
+
+window.addSite=async()=>{
+  const name=(document.getElementById('newSiteName')?.value||'').trim();
+  const lat=parseFloat(document.getElementById('newSiteLat')?.value||'');
+  const lng=parseFloat(document.getElementById('newSiteLng')?.value||'');
+  const radius=parseInt(document.getElementById('newSiteRadius')?.value||'0')||150;
+  if(!name)return msg('settingsMsg','Site name is required.');
+  if(isNaN(lat)||isNaN(lng))return msg('settingsMsg','Valid latitude and longitude required. Use "Use My Location" to auto-fill.');
+  const sites=[...(companySettings.sites||[])];
+  sites.push({name,lat,lng,radius});
+  try{
+    await F.setDoc(companyRef(),{sites,updatedAt:new Date().toISOString()},{merge:true});
+    companySettings.sites=sites;
+    document.getElementById('newSiteName').value='';
+    document.getElementById('newSiteLat').value='';
+    document.getElementById('newSiteLng').value='';
+    document.getElementById('newSiteRadius').value='';
+    renderSites();
+    msg('settingsMsg','Site "'+name+'" added','ok');
+  }catch(e){msg('settingsMsg','Failed: '+e.message);}
+};
+
+window.deleteSite=async(idx)=>{
+  const site=(companySettings.sites||[])[idx];
+  if(!site||!confirm('Remove site "'+site.name+'"?'))return;
+  const sites=[...(companySettings.sites||[])];
+  sites.splice(idx,1);
+  try{
+    await F.setDoc(companyRef(),{sites,updatedAt:new Date().toISOString()},{merge:true});
+    companySettings.sites=sites;
+    renderSites();
+    msg('settingsMsg','Site removed','ok');
+  }catch(e){msg('settingsMsg','Failed: '+e.message);}
+};
+
+
+/* =====================================================================
+   PASSWORD MANAGEMENT
+   ===================================================================== */
+window.togglePassView=(id)=>{
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.type=el.type==='password'?'text':'password';
+};
+
+window.forgotPassword=async()=>{
+  const email=currentUser?.email||document.getElementById('email')?.value?.trim()||'';
+  if(!email)return alert('Enter your admin email first.');
+  try{
+    await F.sendPasswordResetEmail(auth,email);
+    alert('Password reset email sent to '+email+'. Check your inbox.');
+  }catch(e){alert('Failed: '+e.message);}
+};
+
+window.changePassword=async()=>{
+  const current=document.getElementById('currentPass')?.value||'';
+  const newPw=document.getElementById('newPass')?.value||'';
+  const confirm=document.getElementById('confirmPass')?.value||'';
+  if(!current||!newPw||!confirm)return msg('passMsg','Fill all three password fields.');
+  if(newPw!==confirm)return msg('passMsg','New passwords do not match.');
+  if(newPw.length<6)return msg('passMsg','Password must be at least 6 characters.');
+  try{
+    const cred=F.EmailAuthProvider.credential(currentUser.email,current);
+    await F.reauthenticateWithCredential(currentUser,cred);
+    await F.updatePassword(currentUser,newPw);
+    document.getElementById('currentPass').value='';
+    document.getElementById('newPass').value='';
+    document.getElementById('confirmPass').value='';
+    msg('passMsg','Password changed successfully','ok');
+  }catch(e){
+    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')
+      msg('passMsg','Current password is incorrect.');
+    else
+      msg('passMsg','Failed: '+e.message);
+  }
+};
+
+
+/* =====================================================================
+   VIEW SPECIFIC PHOTO (clock-in OR clock-out)
+   ===================================================================== */
+window.viewSpecificPhoto=(entryId,type)=>{
+  const e=entries.find(x=>x.id===entryId);
+  if(!e)return alert('Entry not found.');
+  const url=type==='out'?(e.photoOut||e.photo||''):(e.photoIn||e.photo||'');
+  if(!url)return alert('No '+type+' photo saved for this entry.');
+  const label=(type==='out'?'Clock Out':'Clock In')+' Photo';
+  document.getElementById('photoModalTitle').textContent=label+' — '+(e.workerName||'Worker');
+  document.getElementById('photoModalImg').src=url;
+  document.getElementById('photoModal').classList.add('open');
+};
+
+
+/* =====================================================================
+   FACE MATCH — runs silently after clock-in, never blocks worker
+   ===================================================================== */
+let _faceApiReady=false;
+let _faceApiLoading=false;
+
+async function loadFaceAPI(){
+  if(_faceApiReady)return true;
+  if(_faceApiLoading)return false;
+  _faceApiLoading=true;
+  try{
+    if(!window.faceapi){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
+        s.onload=resolve;s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+    const MODEL='https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL)
+    ]);
+    _faceApiReady=true;
+    return true;
+  }catch(e){
+    console.warn('FaceAPI load failed (silent):',e.message);
+    _faceApiLoading=false;
+    return false;
+  }
+}
+
+function _imgFromSrc(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+
+async function runFaceMatch(entryId,profileSrc,clockSrc){
+  try{
+    // Hard timeout: if models take >30s to load, skip entirely
+    const ready=await Promise.race([
+      loadFaceAPI(),
+      new Promise(r=>setTimeout(()=>r(false),30000))
+    ]);
+    if(!ready)return;
+
+    const [img1,img2]=await Promise.all([_imgFromSrc(profileSrc),_imgFromSrc(clockSrc)]);
+    const opts=new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:0.3});
+    const [d1,d2]=await Promise.all([
+      faceapi.detectSingleFace(img1,opts).withFaceLandmarks(true).withFaceDescriptor(),
+      faceapi.detectSingleFace(img2,opts).withFaceLandmarks(true).withFaceDescriptor()
+    ]);
+
+    if(!d1||!d2){
+      await F.updateDoc(entryDoc(entryId),{faceMatchStatus:'no_face',faceMatchWarning:true});
+      return;
+    }
+    const dist=faceapi.euclideanDistance(d1.descriptor,d2.descriptor);
+    const warn=dist>0.55;
+    await F.updateDoc(entryDoc(entryId),{
+      faceMatchScore:Math.round(dist*100)/100,
+      faceMatchStatus:warn?'mismatch':'match',
+      faceMatchWarning:warn
+    });
+  }catch(e){
+    console.warn('Face match error (silent):',e.message);
+    // Completely silent — never surfaces to worker
+  }
+}
+
 
 
 // Kick off the app
